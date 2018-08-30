@@ -129,10 +129,13 @@ public class ProblemSpec {
 				// The box creation function requires the bottom left corner.
 				movingBoxes.add(new MovingBox(
 					new Point2D.Double(s.nextDouble()-robotWidth/2,
-										s.nextDouble()-robotWidth/2),	robotWidth));
-				movingBoxEndPositions.add(
-					new Point2D.Double(s.nextDouble()-robotWidth/2,
-										s.nextDouble()-robotWidth/2));
+										s.nextDouble()-robotWidth/2),
+						new Point2D.Double(s.nextDouble()-robotWidth/2,
+								s.nextDouble()-robotWidth/2), robotWidth));
+//				Garbage
+//				movingBoxEndPositions.add(
+//					new Point2D.Double(s.nextDouble()-robotWidth/2,
+//										s.nextDouble()-robotWidth/2));
 				s.close();
 			}
 

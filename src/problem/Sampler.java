@@ -49,7 +49,12 @@ public class Sampler {
         //add nodes for movingBoxes
         if(movingBoxes.size() > 0){
             for(MovingBox mb : movingBoxes){
-                mb.
+
+                Rectangle2D endRect = new Rectangle2D.Double(mb.getEndPos().getX(),
+                        mb.getEndPos().getY(),
+                        mb.getWidth(), mb.getWidth());
+
+                anchorNodes.addAll(findCornerNodes((Rectangle2D) endRect.clone()));
                 anchorNodes.addAll(findCornerNodes(mb.getRect()));
             }
         }
@@ -65,13 +70,13 @@ public class Sampler {
     private List<Point2D> findCornerNodes(Rectangle2D object){
         List<Point2D> currNodes = new ArrayList<>();
 
-        /** for the robot (attach)*/
-
+        //On object
         currNodes.add(new Point2D.Double(object.getMinX(),object.getMinY()));
         currNodes.add(new Point2D.Double(object.getMaxX(),object.getMinY()));
         currNodes.add(new Point2D.Double(object.getMinX(),object.getMaxY()));
         currNodes.add(new Point2D.Double(object.getMaxX(),object.getMaxY()));
 
+        //Offset
         Point2D llc = new Point2D.Double((object.getMinX()
                 - movingBoxWidth), (object.getMinY() - movingBoxWidth));
         Point2D lrc = new Point2D.Double((object.getMaxX()
