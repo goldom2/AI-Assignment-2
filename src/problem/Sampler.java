@@ -103,16 +103,78 @@ public class Sampler {
      * @param currNode
      * @return
      */
-    private boolean checkIfLegal(Point2D currNode){
-        if(currNode.getX() > (1 - movingBoxWidth) || currNode.getX() < 0
-            || currNode.getY() > (1 - movingBoxWidth) || currNode.getY() < 0){
+    private boolean checkIfLegal(Point2D currNode) {
+        if (currNode.getX() > (1 - movingBoxWidth) || currNode.getX() < 0
+                || currNode.getY() > (1 - movingBoxWidth) || currNode.getY() < 0) {
             return false;
         }
-        for(StaticObstacle staticObstacle : staticObstacles){
-            if(staticObstacle.getRect().contains(currNode)){
+        for (StaticObstacle staticObstacle : staticObstacles) {
+            if (staticObstacle.getRect().contains(currNode)) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Create nodes linking each current node in vertical and horizontal lines.
+     * Return a list of edges and nodes.
+     *
+     *
+     */
+    private void linkNodes(List<Point2D> nodes) {
+        List<Point2D> newNodes = new ArrayList<Point2D>();
+        List<Edge> edges = new ArrayList<Edge>();
+
+        for (Point2D i : nodes) {
+            for (Point2D j : nodes) {
+                if (i.equals(j)) {
+                    continue;
+                }
+
+                // Add new nodes joining the two existing nodes using horizontal and vertical lines
+                Point2D x = new Point2D.Double(i.getX(), j.getY());
+                Point2D y = new Point2D.Double(j.getX(), i.getY());
+                newNodes.add(x);
+                newNodes.add(y);
+
+                // Create lines between nodes to test for edges
+                Edge e = testEdge(x, i);
+                if (e != null) {
+                    edges.add(e);
+                }
+                e = testEdge(x, j);
+                if (e != null) {
+                    edges.add(e);
+                }
+                e = testEdge(y, i);
+                if (e != null) {
+                    edges.add(e);
+                }
+                e = testEdge(y, j);
+                if (e != null) {
+                    edges.add(e);
+                }
+
+            }
+        }
+
+
+    }
+
+    /**
+     *
+     * @param x
+     * @param y
+     * @return the Edge or NULL if it collides
+     */
+    private Edge testEdge(Point2D x, Point2D y) {
+        Edge e = new Edge(x, y);
+        for (StaticObstacle o : staticObstacles) {
+            if (o.getRect().intersectsLine(e)) {
+                return null;
+            }
+        }
+        return e;
     }
 }
