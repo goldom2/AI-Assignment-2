@@ -20,7 +20,19 @@ public class MovingBox extends Box {
 	 * @param width
 	 *            the width (and height) of the box
 	 */
-    public MovingBox(Point2D pos, double width) {
+
+	private Point2D endPos;
+
+	public MovingBox(Point2D pos, double width) {
+		super(pos, width);
+	}
+
+    public MovingBox(Point2D pos, Point2D endPos, double width) {
         super(pos, width);
-    }
+		this.endPos = endPos;
+	}
+
+	public Point2D getEndPos(){
+    	return endPos;
+	}
 }
