@@ -52,8 +52,8 @@ public class ProblemSpec {
 	private List<List<Box>> movingBoxPath = new ArrayList<>();
     private List<List<Box>> movingObstaclePath = new ArrayList<>();
 
-	
-	/** Returns the width of the robot **/		
+
+	/** adds to the path **/
 	public double getRobotWidth() {return robotWidth;}
 
 	/** Returns a list of static obstacles **/		
