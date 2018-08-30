@@ -138,29 +138,32 @@ public class Sampler {
                 }
 
                 // Add new nodes joining the two existing nodes using horizontal and vertical lines
-                Point2D x = new Point2D.Double(i.getX(), j.getY());
-                Point2D y = new Point2D.Double(j.getX(), i.getY());
-                newNodes.add(x);
-                newNodes.add(y);
-
                 // Create lines between nodes to test for edges
-                Edge e = testEdge(x, i);
-                if (e != null) {
-                    edges.add(e);
+                Edge e;
+                Point2D x = new Point2D.Double(i.getX(), j.getY());
+                if (checkIfLegal(x)) {
+                    newNodes.add(x);
+                    e = testEdge(x, i);
+                    if (e != null) {
+                        edges.add(e);
+                    }
+                    e = testEdge(x, j);
+                    if (e != null) {
+                        edges.add(e);
+                    }
                 }
-                e = testEdge(x, j);
-                if (e != null) {
-                    edges.add(e);
+                Point2D y = new Point2D.Double(j.getX(), i.getY());
+                if (checkIfLegal(x)) {
+                    newNodes.add(y);
+                    e = testEdge(y, i);
+                    if (e != null) {
+                        edges.add(e);
+                    }
+                    e = testEdge(y, j);
+                    if (e != null) {
+                        edges.add(e);
+                    }
                 }
-                e = testEdge(y, i);
-                if (e != null) {
-                    edges.add(e);
-                }
-                e = testEdge(y, j);
-                if (e != null) {
-                    edges.add(e);
-                }
-
             }
         }
 
@@ -181,5 +184,33 @@ public class Sampler {
             }
         }
         return e;
+    }
+
+    /**
+     * Debugging function to draw nodes as movable objects on the visualiser
+     */
+    public void visualiseNodes(List<Point2D> nodes) {
+        String output = "";
+        output += movingBoxWidth + " " + robo.getPos().getX()
+                + " " + robo.getPos().getY() + " " + robo.getOrientation() + "\n";
+        output += movingBoxes.size() + " " + (movingObstacles.size() + nodes.size())
+                + " " + staticObstacles.size() + "\n";
+
+        for (MovingBox box : movingBoxes) {
+            output += box.getPos().getX() + " " + box.getPos().getY() + " "
+                    + box.getEndPos().getX() + " " + box.getEndPos().getY() + "\n";
+        }
+
+        for (MovingObstacle ob: movingObstacles) {
+            output += ob.getPos().getX() + " " + ob.getPos().getY() + " " + ob.getWidth() + "\n";
+        }
+        for (Point2D node : nodes) {
+            output += node.getX() + " " + node.getY() + " " + "0.01\n";
+        }
+
+        for (StaticObstacle ob : staticObstacles) {
+            output += ob.getRect().getMinX() + " " + ob.getRect().getMinY()
+                    + " " + ob.getRect().getMaxX() + " " + ob.getRect().getMaxY() + "\n";
+        }
     }
 }
