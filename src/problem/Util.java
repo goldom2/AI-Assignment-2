@@ -7,8 +7,6 @@ import java.util.List;
 
 public class Util {
 
-
-
     public static void writeToOutput(State state) throws IOException {
 
         int length = state.returnPathLength();

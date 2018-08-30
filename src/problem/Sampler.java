@@ -2,8 +2,13 @@ package problem;
 
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Sampler {
 
@@ -32,9 +37,9 @@ public class Sampler {
      * The goal of this sampling strategy is to isolate obstacles my placing nodes
      * on the edges of illegal space and creating a dispersed network around these anchor nodes
      */
-    public void objectBasedSampling(){
+    public void objectBasedSampling() throws IOException {
 
-        List<Point2D> anchorNodes = new ArrayList<>();
+        Set<Point2D> anchorNodes = new HashSet<>();
 
         //add the starting point of the robo
         anchorNodes.add(robo.getPos());
@@ -65,10 +70,13 @@ public class Sampler {
                 anchorNodes.addAll(findCornerNodes(mo.getRect()));
             }
         }
+
+        anchorNodes.add(robo.getPos());
+        visualiseNodes(linkNodes(anchorNodes));
     }
 
-    private List<Point2D> findCornerNodes(Rectangle2D object){
-        List<Point2D> currNodes = new ArrayList<>();
+    private Set<Point2D> findCornerNodes(Rectangle2D object){
+        Set<Point2D> currNodes = new HashSet<>();
 
         //On object
         currNodes.add(new Point2D.Double(object.getMinX(),object.getMinY()));
@@ -79,12 +87,10 @@ public class Sampler {
         //Offset
         Point2D llc = new Point2D.Double((object.getMinX()
                 - movingBoxWidth), (object.getMinY() - movingBoxWidth));
-        Point2D lrc = new Point2D.Double((object.getMaxX()
-                + movingBoxWidth), (object.getMinY() - movingBoxWidth));
+        Point2D lrc = new Point2D.Double(object.getMaxX(),
+                (object.getMinY() - movingBoxWidth));
         Point2D ulc = new Point2D.Double((object.getMinX()
                 - movingBoxWidth), object.getMaxY());
-        Point2D urc = new Point2D.Double(object.getMaxX(),
-                object.getMaxY());
 
         if(checkIfLegal(llc)){
             currNodes.add(llc);
@@ -94,9 +100,6 @@ public class Sampler {
         }
         if(checkIfLegal(ulc)){
             currNodes.add(ulc);
-        }
-        if(checkIfLegal(urc)){
-            currNodes.add(urc);
         }
 
         return currNodes;
@@ -109,8 +112,10 @@ public class Sampler {
      * @return
      */
     private boolean checkIfLegal(Point2D currNode) {
-        if (currNode.getX() > (1 - movingBoxWidth) || currNode.getX() < 0
-                || currNode.getY() > (1 - movingBoxWidth) || currNode.getY() < 0) {
+        if (currNode.getX() > (1 - movingBoxWidth*1.5)
+                || currNode.getX() < (0 + movingBoxWidth/2)
+                || currNode.getY() > (1 - movingBoxWidth*1.5)
+                || currNode.getY() < (0 + movingBoxWidth/2)){
             return false;
         }
         for (StaticObstacle staticObstacle : staticObstacles) {
@@ -127,9 +132,9 @@ public class Sampler {
      *
      *
      */
-    private void linkNodes(List<Point2D> nodes) {
-        List<Point2D> newNodes = new ArrayList<Point2D>();
-        List<Edge> edges = new ArrayList<Edge>();
+    private Set<Point2D> linkNodes(Set<Point2D> nodes) {
+        Set<Point2D> newNodes = new HashSet<>();
+        Set<Edge> edges = new HashSet<>();
 
         for (Point2D i : nodes) {
             for (Point2D j : nodes) {
@@ -153,7 +158,7 @@ public class Sampler {
                     }
                 }
                 Point2D y = new Point2D.Double(j.getX(), i.getY());
-                if (checkIfLegal(x)) {
+                if (checkIfLegal(y)) {
                     newNodes.add(y);
                     e = testEdge(y, i);
                     if (e != null) {
@@ -166,8 +171,8 @@ public class Sampler {
                 }
             }
         }
-
-
+        newNodes.addAll(nodes);
+        return newNodes;
     }
 
     /**
@@ -189,28 +194,42 @@ public class Sampler {
     /**
      * Debugging function to draw nodes as movable objects on the visualiser
      */
-    public void visualiseNodes(List<Point2D> nodes) {
-        String output = "";
-        output += movingBoxWidth + " " + robo.getPos().getX()
-                + " " + robo.getPos().getY() + " " + robo.getOrientation() + "\n";
-        output += movingBoxes.size() + " " + (movingObstacles.size() + nodes.size())
-                + " " + staticObstacles.size() + "\n";
+    public void visualiseNodes(Set<Point2D> nodes) throws IOException {
+        //assume that all lists are the same size
+        BufferedWriter writer = new BufferedWriter(new FileWriter("solution1.txt"));
+
+        writer.write(movingBoxWidth + " " + robo.getPos().getX()
+                + " " + robo.getPos().getY() + " " + robo.getOrientation());
+        writer.newLine();
+        writer.write(movingBoxes.size() + " " + (movingObstacles.size() + nodes.size())
+                + " " + staticObstacles.size());
+        writer.newLine();
 
         for (MovingBox box : movingBoxes) {
-            output += box.getPos().getX() + " " + box.getPos().getY() + " "
-                    + box.getEndPos().getX() + " " + box.getEndPos().getY() + "\n";
+            writer.write((box.getPos().getX() + movingBoxWidth / 2) + " "
+                    + (box.getPos().getY() + movingBoxWidth / 2) + " "
+                    + (box.getEndPos().getX() + movingBoxWidth / 2) + " "
+                    + (box.getEndPos().getY() + movingBoxWidth / 2));
+            writer.newLine();
         }
 
         for (MovingObstacle ob: movingObstacles) {
-            output += ob.getPos().getX() + " " + ob.getPos().getY() + " " + ob.getWidth() + "\n";
+            writer.write((ob.getPos().getX() + ob.getWidth() / 2) + " "
+                    + (ob.getPos().getY() + ob.getWidth() / 2) + " "
+                    + ob.getWidth());
+            writer.newLine();
         }
         for (Point2D node : nodes) {
-            output += node.getX() + " " + node.getY() + " " + "0.01\n";
+            writer.write(node.getX() + " " + node.getY() + " " + "0.01");
+            writer.newLine();
         }
 
         for (StaticObstacle ob : staticObstacles) {
-            output += ob.getRect().getMinX() + " " + ob.getRect().getMinY()
-                    + " " + ob.getRect().getMaxX() + " " + ob.getRect().getMaxY() + "\n";
+            writer.write(ob.getRect().getMinX() + " " + ob.getRect().getMinY()
+                    + " " + ob.getRect().getMaxX() + " " + ob.getRect().getMaxY());
+            writer.newLine();
         }
+
+        writer.close();
     }
 }

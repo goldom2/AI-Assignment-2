@@ -127,15 +127,20 @@ public class ProblemSpec {
 				lineNo++;
 				s = new Scanner(line);
 				// The box creation function requires the bottom left corner.
+				double Xo = s.nextDouble();
+				double Yo = s.nextDouble();
+				double Xe = s.nextDouble();
+				double Ye = s.nextDouble();
+
 				movingBoxes.add(new MovingBox(
-					new Point2D.Double(s.nextDouble()-robotWidth/2,
-										s.nextDouble()-robotWidth/2),
-						new Point2D.Double(s.nextDouble()-robotWidth/2,
-								s.nextDouble()-robotWidth/2), robotWidth));
-//				Garbage
-//				movingBoxEndPositions.add(
-//					new Point2D.Double(s.nextDouble()-robotWidth/2,
-//										s.nextDouble()-robotWidth/2));
+					new Point2D.Double(Xo-robotWidth/2,
+										Yo-robotWidth/2),
+						new Point2D.Double(Xe-robotWidth/2,
+								Ye-robotWidth/2), robotWidth));
+
+				movingBoxEndPositions.add(
+					new Point2D.Double(Xe-robotWidth/2,
+										Ye-robotWidth/2));
 				s.close();
 			}
 
