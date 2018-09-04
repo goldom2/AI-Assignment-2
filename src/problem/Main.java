@@ -33,6 +33,6 @@ public class Main {
 
         Sampler ss = new Sampler(ps.getInitialRobotConfig(),
                 mb, ps.getStaticObstacles(),mo);
-        Set<Point2D> nodes = ss.objectBasedSampling();
+        ss.printOutput(ss.cSpaceHandler());
     }
 }

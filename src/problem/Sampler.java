@@ -70,6 +70,29 @@ public class Sampler {
         return validStates;
     }
 
+    /**
+     * Write solution file
+     *
+     * @param solution
+     */
+    public void printOutput(Set<State> solution) {
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter("solution1.txt"));
+
+            writer.write(solution.size());
+            writer.newLine();
+            for (State step : solution) {
+                writer.write(step.printState());
+                writer.newLine();
+            }
+            writer.close();
+        } catch (IOException e) {
+            System.out.println("Error writing solution file");
+            e.printStackTrace();
+        }
+
+    }
+
 
     /**
      * The goal of this sampling strategy is to isolate obstacles my placing nodes
