@@ -34,6 +34,7 @@ public class MovingBox extends Box {
 
 	/**
 	 * Calculates the minimum distance to the goal
+     *
 	 * @return
 	 */
 	public double distanceToGoal() {

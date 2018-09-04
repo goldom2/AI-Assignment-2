@@ -1,5 +1,6 @@
 package problem;
 
+import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,7 +30,12 @@ public class State {
      */
     public boolean isValid(List<StaticObstacle> obstacles,
                       double boxWidth){
+        Rectangle2D space = new Rectangle2D.Double(0, 0, 1, 1);
+        // Check all moving boxes are valid
         for (int i = 0; i < movingBoxes.size(); i++) {
+            if (!space.contains(movingBoxes.get(i).getRect())) {
+                return false;
+            }
             for (int j = 0; j < obstacles.size(); j++) {
                 if (movingBoxes.get(i).getRect().intersects(obstacles.get(j).getRect())) {
                     return false;
@@ -49,7 +55,11 @@ public class State {
             }
         }
 
+        // Check all moving obstacles are valid
         for (int i = 0; i < movingObstacles.size(); i++) {
+            if (!space.contains(movingObstacles.get(i).getRect())) {
+                return false;
+            }
             for (int j = 0; j < obstacles.size(); j++) {
                 if (movingObstacles.get(i).getRect().intersects(obstacles.get(j).getRect())) {
                     return false;
@@ -68,6 +78,7 @@ public class State {
 
     /**
      * Calculates the minimum distance for each box to the goal state
+     *
      * @return
      */
     public double distanceToGoalState() {
