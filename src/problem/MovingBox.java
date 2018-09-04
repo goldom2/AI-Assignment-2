@@ -32,6 +32,17 @@ public class MovingBox extends Box {
 		this.endPos = endPos;
 	}
 
+	/**
+	 * Calculates the minimum distance to the goal
+	 * @return
+	 */
+	public double distanceToGoal() {
+		double result = 0;
+		result += Math.abs(getPos().getX() - getEndPos().getX());
+		result += Math.abs(getPos().getY() - getEndPos().getY());
+		return result;
+	}
+
 	public Point2D getEndPos(){
     	return endPos;
 	}
