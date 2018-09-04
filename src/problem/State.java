@@ -1,7 +1,6 @@
 package problem;
 
 import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
 import java.util.List;
 
 public class State {
@@ -22,14 +21,13 @@ public class State {
 
     /**
      * Takes the static obstacles from the problem spec and the size of the boxes
-     * Returns if the configuration is valid, i.e. has no collisions
+     * Returns if the configuration is valid, i.e. has no collisions and is within
+     * the space
      *
      * @param obstacles
-     * @param boxWidth
      * @return
      */
-    public boolean isValid(List<StaticObstacle> obstacles,
-                      double boxWidth){
+    public boolean isValid(List<StaticObstacle> obstacles){
         Rectangle2D space = new Rectangle2D.Double(0, 0, 1, 1);
         // Check all moving boxes are valid
         for (int i = 0; i < movingBoxes.size(); i++) {
@@ -89,4 +87,14 @@ public class State {
         return result;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof State) {
+            State other = (State) obj;
+            return other.robot.equals(this.robot)
+                    && other.movingBoxes.equals(this.movingBoxes)
+                    && other.movingObstacles.equals(this.movingObstacles);
+        }
+        return false;
+    }
 }
