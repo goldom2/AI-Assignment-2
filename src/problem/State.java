@@ -76,6 +76,10 @@ public class State {
         return true;
     }
 
+    public List<MovingBox> getMovingBoxes(){
+        return movingBoxes;
+    }
+
     /**
      * Calculates the minimum distance for each box to the goal state
      *

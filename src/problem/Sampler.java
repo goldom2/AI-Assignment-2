@@ -34,6 +34,7 @@ public class Sampler {
 
     private State sampleNewState(){
 
+        List<MovingObstacle> newMovingObstacles = new ArrayList<>();
         List<MovingBox> newMovingBoxes = new ArrayList<>();
 
         for(MovingBox box : movingBoxes){
@@ -41,7 +42,12 @@ public class Sampler {
                     new Point2D.Double(Math.random(), Math.random()), box.getWidth()));
         }
 
-        State temp = new State(robo, newMovingBoxes, movingObstacles);
+        for(MovingObstacle obstacle : movingObstacles){
+            newMovingObstacles.add(new MovingObstacle(
+                    new Point2D.Double(Math.random(), Math.random()), obstacle.getWidth()));
+        }
+
+        State temp = new State(robo, newMovingBoxes, newMovingObstacles);
 
         if(temp.isValid(staticObstacles)){
             return temp;
