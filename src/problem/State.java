@@ -97,4 +97,22 @@ public class State {
         }
         return false;
     }
+
+    /**
+     * return
+     *
+     * @return
+     */
+    public String printState() {
+        String output = robot.getPos().getX() + " " + robot.getPos().getY() + " " + robot.getOrientation();
+        for (MovingBox box : movingBoxes) {
+            output += " " + box.getRect().getMinX() + box.getWidth() / 2;
+            output += " " + box.getRect().getMinY() + box.getWidth() / 2;
+        }
+        for (MovingObstacle obstacle : movingObstacles) {
+            output += " " + obstacle.getRect().getMinX() + obstacle.getWidth() / 2;
+            output += " " + obstacle.getRect().getMinY() + obstacle.getWidth() / 2;
+        }
+        return output;
+    }
 }
