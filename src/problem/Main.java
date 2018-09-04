@@ -1,15 +1,17 @@
 package problem;
 
+import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class Main {
 
     public static void main(String[] args) throws IOException {
         ProblemSpec ps = new ProblemSpec();
         try {
-            ps.loadProblem("input2.txt");
+            ps.loadProblem("input1.txt");
 //            ps.loadSolution("solution1.txt");
         } catch (IOException e) {
             System.out.println("IO Exception occurred");
@@ -31,6 +33,6 @@ public class Main {
 
         Sampler ss = new Sampler(ps.getInitialRobotConfig(),
                 mb, ps.getStaticObstacles(),mo);
-        ss.objectBasedSampling();
+        Set<Point2D> nodes = ss.objectBasedSampling();
     }
 }
