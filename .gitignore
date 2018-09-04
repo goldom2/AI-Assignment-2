@@ -27,3 +27,6 @@ out/
 # Gradle
 build
 .gradle
+
+# Assignment Specific
+solution*.txt
