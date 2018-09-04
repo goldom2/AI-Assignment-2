@@ -30,8 +30,40 @@ public class Sampler {
 
         //Assume there is always at least one moving box
         this.movingBoxWidth = movingBoxes.get(0).getWidth();
-
     }
+
+    private State sampleNewState(){
+
+        List<MovingBox> newMovingBoxes = new ArrayList<>();
+
+        for(MovingBox box : movingBoxes){
+            newMovingBoxes.add(new MovingBox(
+                    new Point2D.Double(Math.random(), Math.random()), box.getWidth()));
+        }
+
+        State temp = new State(robo, newMovingBoxes, movingObstacles);
+
+        if(temp.isValid(staticObstacles)){
+            return temp;
+        }
+        return null;
+    }
+
+    public Set<State> cSpaceHandler(){
+
+        Set<State> validStates = new HashSet<>();
+
+        for(int i = 0; i < 10; i++){
+            State nextState = sampleNewState();
+
+            if(nextState != null){
+                validStates.add(nextState);
+            }
+        }
+
+        return validStates;
+    }
+
 
     /**
      * The goal of this sampling strategy is to isolate obstacles my placing nodes
