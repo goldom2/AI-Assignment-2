@@ -37,7 +37,7 @@ public class Sampler {
      * The goal of this sampling strategy is to isolate obstacles my placing nodes
      * on the edges of illegal space and creating a dispersed network around these anchor nodes
      */
-    public void objectBasedSampling() throws IOException {
+    public Set<Point2D> objectBasedSampling() throws IOException {
 
         Set<Point2D> anchorNodes = new HashSet<>();
 
@@ -72,7 +72,9 @@ public class Sampler {
         }
 
         anchorNodes.add(robo.getPos());
-        visualiseNodes(linkNodes(anchorNodes));
+        visualiseNodes(linkNodes(anchorNodes)); //visualisation tool
+
+        return linkNodes(anchorNodes);
     }
 
     private Set<Point2D> findCornerNodes(Rectangle2D object){
