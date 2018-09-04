@@ -73,7 +73,7 @@ public class State {
     public double distanceToGoalState() {
         double result = 0;
         for (MovingBox box : movingBoxes) {
-            result += box.distanceToGoal();s
+            result += box.distanceToGoal();
         }
         return result;
     }
