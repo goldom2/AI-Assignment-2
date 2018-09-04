@@ -33,6 +33,6 @@ public class Main {
 
         Sampler ss = new Sampler(ps.getInitialRobotConfig(),
                 mb, ps.getStaticObstacles(),mo);
-        ss.printOutput(ss.cSpaceHandler());
+        ss.stepObjectiveSampling();
     }
 }

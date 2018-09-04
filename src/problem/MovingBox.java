@@ -3,6 +3,9 @@ package problem;
 import problem.Box;
 
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -22,6 +25,8 @@ public class MovingBox extends Box {
 	 */
 
 	private Point2D endPos;
+	private double distance;
+	private Set<MovingBox> nodeList = new HashSet<>();
 
 	public MovingBox(Point2D pos, double width) {
 		super(pos, width);
@@ -43,6 +48,22 @@ public class MovingBox extends Box {
 		result += Math.abs(getPos().getY() - getEndPos().getY());
 		return result;
 	}
+
+	public void addToNodeList(MovingBox box){
+        nodeList.add(box);
+    }
+
+    public Set<MovingBox> getNodeList(){
+	    return nodeList;
+    }
+
+    public void setDistanceToGoal(double dist){
+	    distance = dist;
+    }
+
+    public double getDistanceToGoal(){
+	    return distance;
+    }
 
 	public Point2D getEndPos(){
     	return endPos;

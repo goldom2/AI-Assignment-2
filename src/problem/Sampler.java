@@ -16,7 +16,8 @@ public class Sampler {
     private List<MovingBox> movingBoxes;
     private List<StaticObstacle> staticObstacles;
     private List<MovingObstacle> movingObstacles;
-    private double movingBoxWidth;
+
+    private MovingBox focusBox;
 
     public Sampler(RobotConfig robo,
                    List<MovingBox> movingBoxes,
@@ -27,27 +28,46 @@ public class Sampler {
         this.movingBoxes = movingBoxes;
         this.staticObstacles = staticObstacles;
         this.movingObstacles = movingObstacles;
-
-        //Assume there is always at least one moving box
-        this.movingBoxWidth = movingBoxes.get(0).getWidth();
     }
 
-    private State sampleNewState(){
-
-        List<MovingObstacle> newMovingObstacles = new ArrayList<>();
+    /**
+     * temp visualisation method
+     *
+     * @param origin
+     * @param mb
+     * @param cur_pos
+     * @return
+     */
+    private State createNewState(State origin, MovingBox mb, MovingBox cur_pos){
         List<MovingBox> newMovingBoxes = new ArrayList<>();
 
-        for(MovingBox box : movingBoxes){
-            newMovingBoxes.add(new MovingBox(
-                    new Point2D.Double(Math.random(), Math.random()), box.getWidth()));
+        for(MovingBox box : origin.getMovingBoxes()){
+            if(box.equals(mb)){
+                MovingBox temp = new MovingBox(
+                        new Point2D.Double(cur_pos.getPos().getX(), cur_pos.getPos().getY()), box.getWidth());
+                newMovingBoxes.add(temp);
+                box.addToNodeList(temp);
+            }else{
+                newMovingBoxes.add(box);
+            }
         }
+        return new State(origin.getRobo(), newMovingBoxes, origin.getMovingObstacles());
+    }
 
-        for(MovingObstacle obstacle : movingObstacles){
-            newMovingObstacles.add(new MovingObstacle(
-                    new Point2D.Double(Math.random(), Math.random()), obstacle.getWidth()));
+    private State sampleNewState(State origin, MovingBox mb){
+        List<MovingBox> newMovingBoxes = new ArrayList<>();
+
+        for(MovingBox box : origin.getMovingBoxes()){
+            if(box.equals(mb)){
+                MovingBox temp = new MovingBox(
+                        new Point2D.Double(Math.random(), Math.random()), box.getWidth());
+                newMovingBoxes.add(temp);
+                box.addToNodeList(temp);
+            }else{
+                newMovingBoxes.add(box);
+            }
         }
-
-        State temp = new State(robo, newMovingBoxes, newMovingObstacles);
+        State temp = new State(origin.getRobo(), newMovingBoxes, origin.getMovingObstacles());
 
         if(temp.isValid(staticObstacles)){
             return temp;
@@ -55,31 +75,16 @@ public class Sampler {
         return null;
     }
 
-    public Set<State> cSpaceHandler(){
-
-        Set<State> validStates = new HashSet<>();
-
-        for(int i = 0; i < 10; i++){
-            State nextState = sampleNewState();
-
-            if(nextState != null){
-                validStates.add(nextState);
-            }
-        }
-
-        return validStates;
-    }
-
     /**
      * Write solution file
      *
      * @param solution
      */
-    public void printOutput(Set<State> solution) {
+    public void printOutput(List<State> solution) {
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter("solution1.txt"));
 
-            writer.write(solution.size());
+            writer.write(Integer.toString(solution.size()));
             writer.newLine();
             for (State step : solution) {
                 writer.write(step.printState());
@@ -93,206 +98,110 @@ public class Sampler {
 
     }
 
+    public List<State> stepObjectiveSampling(){
 
-    /**
-     * The goal of this sampling strategy is to isolate obstacles my placing nodes
-     * on the edges of illegal space and creating a dispersed network around these anchor nodes
-     */
-    public Set<Point2D> objectBasedSampling() throws IOException {
+        State nextState;
+        List<MovingBox> update = new ArrayList<>();
+        update.addAll(movingBoxes);
 
-        Set<Point2D> anchorNodes = new HashSet<>();
+        boolean origin = true;
+        List<State> orderedStates = new ArrayList<>();
 
-        //add the starting point of the robo
-        anchorNodes.add(robo.getPos());
+        for(MovingBox mb : movingBoxes){
+            if(origin){
+                for(int i = 0; i < 10000; i++){
+                    nextState = sampleNewState(new State(robo, movingBoxes, movingObstacles), mb);
 
-        //add nodes for static obstacles
-        if(staticObstacles.size() > 0){
-            for(StaticObstacle so : staticObstacles){
-                anchorNodes.addAll(findCornerNodes(so.getRect()));
-            }
-        }
-
-        //add nodes for movingBoxes
-        if(movingBoxes.size() > 0){
-            for(MovingBox mb : movingBoxes){
-
-                Rectangle2D endRect = new Rectangle2D.Double(mb.getEndPos().getX(),
-                        mb.getEndPos().getY(),
-                        mb.getWidth(), mb.getWidth());
-
-                anchorNodes.addAll(findCornerNodes((Rectangle2D) endRect.clone()));
-                anchorNodes.addAll(findCornerNodes(mb.getRect()));
-            }
-        }
-
-        //add nodes for MovingObstacles
-        if(movingObstacles.size() > 0){
-            for(MovingObstacle mo : movingObstacles){
-                anchorNodes.addAll(findCornerNodes(mo.getRect()));
-            }
-        }
-
-        anchorNodes.add(robo.getPos());
-        visualiseNodes(linkNodes(anchorNodes)); //visualisation tool
-
-        return linkNodes(anchorNodes);
-    }
-
-    private Set<Point2D> findCornerNodes(Rectangle2D object){
-        Set<Point2D> currNodes = new HashSet<>();
-
-        //On object
-        currNodes.add(new Point2D.Double(object.getMinX(),object.getMinY()));
-        currNodes.add(new Point2D.Double(object.getMaxX(),object.getMinY()));
-        currNodes.add(new Point2D.Double(object.getMinX(),object.getMaxY()));
-        currNodes.add(new Point2D.Double(object.getMaxX(),object.getMaxY()));
-
-        //Offset
-        Point2D llc = new Point2D.Double((object.getMinX()
-                - movingBoxWidth), (object.getMinY() - movingBoxWidth));
-        Point2D lrc = new Point2D.Double(object.getMaxX(),
-                (object.getMinY() - movingBoxWidth));
-        Point2D ulc = new Point2D.Double((object.getMinX()
-                - movingBoxWidth), object.getMaxY());
-
-        if(checkIfLegal(llc)){
-            currNodes.add(llc);
-        }
-        if(checkIfLegal(lrc)){
-            currNodes.add(lrc);
-        }
-        if(checkIfLegal(ulc)){
-            currNodes.add(ulc);
-        }
-
-        return currNodes;
-    }
-
-    /**
-     * Check the proposed node against edges (walls) and placement under static objects
-     *
-     * @param currNode
-     * @return
-     */
-    private boolean checkIfLegal(Point2D currNode) {
-        if (currNode.getX() > (1 - movingBoxWidth*1.5)
-                || currNode.getX() < (0 + movingBoxWidth/2)
-                || currNode.getY() > (1 - movingBoxWidth*1.5)
-                || currNode.getY() < (0 + movingBoxWidth/2)){
-            return false;
-        }
-        for (StaticObstacle staticObstacle : staticObstacles) {
-            if (staticObstacle.getRect().contains(currNode)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Create nodes linking each current node in vertical and horizontal lines.
-     * Return a list of edges and nodes.
-     *
-     *
-     */
-    private Set<Point2D> linkNodes(Set<Point2D> nodes) {
-        Set<Point2D> newNodes = new HashSet<>();
-        Set<Edge> edges = new HashSet<>();
-
-        for (Point2D i : nodes) {
-            for (Point2D j : nodes) {
-                if (i.equals(j)) {
-                    continue;
-                }
-
-                // Add new nodes joining the two existing nodes using horizontal and vertical lines
-                // Create lines between nodes to test for edges
-                Edge e;
-                Point2D x = new Point2D.Double(i.getX(), j.getY());
-                if (checkIfLegal(x)) {
-                    newNodes.add(x);
-                    e = testEdge(x, i);
-                    if (e != null) {
-                        edges.add(e);
-                    }
-                    e = testEdge(x, j);
-                    if (e != null) {
-                        edges.add(e);
+                    if(nextState != null){
+                        orderedStates.add(nextState);
                     }
                 }
-                Point2D y = new Point2D.Double(j.getX(), i.getY());
-                if (checkIfLegal(y)) {
-                    newNodes.add(y);
-                    e = testEdge(y, i);
-                    if (e != null) {
-                        edges.add(e);
-                    }
-                    e = testEdge(y, j);
-                    if (e != null) {
-                        edges.add(e);
+
+                origin = false;
+            }else{
+                for(int i = 0; i < 10000; i++){
+                    nextState = sampleNewState(new State(robo, update, movingObstacles), mb);
+
+                    if(nextState != null){
+                        orderedStates.add(nextState);
                     }
                 }
             }
+
+            update.set(update.indexOf(mb), new MovingBox(
+                    new Point2D.Double(mb.getEndPos().getX(), mb.getEndPos().getY()), mb.getWidth()));
         }
-        newNodes.addAll(nodes);
-        return newNodes;
+
+        printOutput(orderedStates);
+//        int count = 0;
+//        focusBox = movingBoxes.get(0);
+//
+//        List<State> path = new ArrayList<>();
+//        State step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, focusBox);
+//        path.add(step);
+//
+//        MovingBox og = movingBoxes.get(0);
+//        System.out.println(og.getPos().getX() + ", " + og.getPos().getY());
+//
+//        while(count < 100){
+//            MovingBox next = continueMovingBoxPath(og);
+//
+//            if(next != null) {
+//                System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
+//
+//                step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, next);
+//                path.add(step);
+//                og = next;
+//            }else{
+//                System.out.println("next == null");
+//            }
+//
+//            count++;
+//        }
+//
+//        printOutput(path);
+        return orderedStates;
     }
 
-    /**
-     *
-     * @param x
-     * @param y
-     * @return the Edge or NULL if it collides
-     */
-    private Edge testEdge(Point2D x, Point2D y) {
-        Edge e = new Edge(x, y);
-        for (StaticObstacle o : staticObstacles) {
-            if (o.getRect().intersectsLine(e)) {
-                return null;
+    public MovingBox continueMovingBoxPath(MovingBox mb){
+        MovingBox goal = null;
+
+//        System.out.println(mb.getPos().getX() + ", " + mb.getPos().getY());
+
+        for (MovingBox node : getNeighbourNodes(mb)) {
+//            System.out.println("-------- " + node.getPos().getX() + ", " + node.getPos().getY());
+            // weigh each option (currently using distance and adding by the diagonal)
+            if (goal == null) {   //empty goal
+                goal = node;
+            } else if (node.getDistanceToGoal() < goal.getDistanceToGoal()) {
+                goal = node;
             }
         }
-        return e;
+
+        return goal;
     }
 
-    /**
-     * Debugging function to draw nodes as movable objects on the visualiser
-     */
-    public void visualiseNodes(Set<Point2D> nodes) throws IOException {
-        //assume that all lists are the same size
-        BufferedWriter writer = new BufferedWriter(new FileWriter("solution1.txt"));
+    public Set<MovingBox> getNeighbourNodes(MovingBox mb){
 
-        writer.write(movingBoxWidth + " " + robo.getPos().getX()
-                + " " + robo.getPos().getY() + " " + robo.getOrientation());
-        writer.newLine();
-        writer.write(movingBoxes.size() + " " + (movingObstacles.size() + nodes.size())
-                + " " + staticObstacles.size());
-        writer.newLine();
+        Set<MovingBox> neighbourNodes = new HashSet<>();
 
-        for (MovingBox box : movingBoxes) {
-            writer.write((box.getPos().getX() + movingBoxWidth / 2) + " "
-                    + (box.getPos().getY() + movingBoxWidth / 2) + " "
-                    + (box.getEndPos().getX() + movingBoxWidth / 2) + " "
-                    + (box.getEndPos().getY() + movingBoxWidth / 2));
-            writer.newLine();
+        for(MovingBox node : focusBox.getNodeList()){
+
+            double dx = Math.abs(node.getPos().getX() - mb.getPos().getX());
+            double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
+
+            if(dx < 0.1 && dy < 0.1){
+
+//                System.out.println(dx + ", " + dy);
+
+                double ddx = Math.abs(node.getPos().getX() - focusBox.getEndPos().getX());
+                double ddy = Math.abs(node.getPos().getX() - focusBox.getEndPos().getX());
+
+                node.setDistanceToGoal(Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2)));
+                neighbourNodes.add(node);
+            }
         }
 
-        for (MovingObstacle ob: movingObstacles) {
-            writer.write((ob.getPos().getX() + ob.getWidth() / 2) + " "
-                    + (ob.getPos().getY() + ob.getWidth() / 2) + " "
-                    + ob.getWidth());
-            writer.newLine();
-        }
-        for (Point2D node : nodes) {
-            writer.write(node.getX() + " " + node.getY() + " " + "0.01");
-            writer.newLine();
-        }
-
-        for (StaticObstacle ob : staticObstacles) {
-            writer.write(ob.getRect().getMinX() + " " + ob.getRect().getMinY()
-                    + " " + ob.getRect().getMaxX() + " " + ob.getRect().getMaxY());
-            writer.newLine();
-        }
-
-        writer.close();
+        return neighbourNodes;
     }
 }

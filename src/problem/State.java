@@ -39,11 +39,11 @@ public class State {
                     return false;
                 }
             }
-            for (int j = 0; j < movingObstacles.size(); j++) {
-                if (movingBoxes.get(i).getRect().intersects(movingObstacles.get(j).getRect())) {
-                    return false;
-                }
-            }
+//            for (int j = 0; j < movingObstacles.size(); j++) {
+//                if (movingBoxes.get(i).getRect().intersects(movingObstacles.get(j).getRect())) {
+//                    return false;
+//                }
+//            }
             for (int j = 0; j < movingBoxes.size(); j++) {
                 if (movingBoxes.get(i).getRect().intersects(movingBoxes.get(j).getRect())
                         && i != j) {
@@ -78,6 +78,14 @@ public class State {
         return movingBoxes;
     }
 
+    public List<MovingObstacle> getMovingObstacles(){
+        return movingObstacles;
+    }
+
+    public RobotConfig getRobo(){
+        return robot;
+    }
+
     /**
      * Calculates the minimum distance for each box to the goal state
      *
@@ -110,12 +118,12 @@ public class State {
     public String printState() {
         String output = robot.getPos().getX() + " " + robot.getPos().getY() + " " + robot.getOrientation();
         for (MovingBox box : movingBoxes) {
-            output += " " + box.getRect().getMinX() + box.getWidth() / 2;
-            output += " " + box.getRect().getMinY() + box.getWidth() / 2;
+            output += " " + (box.getRect().getMinX() + box.getWidth() / 2);
+            output += " " + (box.getRect().getMinY() + box.getWidth() / 2);
         }
         for (MovingObstacle obstacle : movingObstacles) {
-            output += " " + obstacle.getRect().getMinX() + obstacle.getWidth() / 2;
-            output += " " + obstacle.getRect().getMinY() + obstacle.getWidth() / 2;
+            output += " " + (obstacle.getRect().getMinX() + obstacle.getWidth() / 2);
+            output += " " + (obstacle.getRect().getMinY() + obstacle.getWidth() / 2);
         }
         return output;
     }
