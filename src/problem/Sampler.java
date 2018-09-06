@@ -5,6 +5,8 @@ import java.awt.geom.Rectangle2D;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +18,8 @@ public class Sampler {
     private List<MovingBox> movingBoxes;
     private List<StaticObstacle> staticObstacles;
     private List<MovingObstacle> movingObstacles;
+
+    private double minStepSize = 0.001;
 
     private MovingBox focusBox;
 
@@ -109,7 +113,7 @@ public class Sampler {
 
         for(MovingBox mb : movingBoxes){
             if(origin){
-                for(int i = 0; i < 10000; i++){
+                for(int i = 0; i < 1000; i++){
                     nextState = sampleNewState(new State(robo, movingBoxes, movingObstacles), mb);
 
                     if(nextState != null){
@@ -119,7 +123,7 @@ public class Sampler {
 
                 origin = false;
             }else{
-                for(int i = 0; i < 10000; i++){
+                for(int i = 0; i < 1000; i++){
                     nextState = sampleNewState(new State(robo, update, movingObstacles), mb);
 
                     if(nextState != null){
@@ -132,34 +136,38 @@ public class Sampler {
                     new Point2D.Double(mb.getEndPos().getX(), mb.getEndPos().getY()), mb.getWidth()));
         }
 
-        printOutput(orderedStates);
-//        int count = 0;
-//        focusBox = movingBoxes.get(0);
-//
-//        List<State> path = new ArrayList<>();
-//        State step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, focusBox);
-//        path.add(step);
-//
-//        MovingBox og = movingBoxes.get(0);
+//        printOutput(orderedStates);
+
+        int count = 0;
+        focusBox = movingBoxes.get(0);
+
+        List<State> path = new ArrayList<>();
+        State step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, focusBox);
+        path.add(step);
+
+        MovingBox og = movingBoxes.get(0);
 //        System.out.println(og.getPos().getX() + ", " + og.getPos().getY());
-//
-//        while(count < 100){
-//            MovingBox next = continueMovingBoxPath(og);
-//
-//            if(next != null) {
+
+        while(count < 100){ //hard limit placed
+            MovingBox next = continueMovingBoxPath(og);
+
+            if(next != null) {
 //                System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
-//
-//                step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, next);
-//                path.add(step);
-//                og = next;
-//            }else{
-//                System.out.println("next == null");
-//            }
-//
-//            count++;
-//        }
-//
-//        printOutput(path);
+
+                for(MovingBox sStep : buildStep(og, next)){
+                    step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, sStep);
+                    path.add(step);
+                }
+
+                og = next;
+            }else{
+                System.out.println("next == null");
+            }
+
+            count++;
+        }
+
+        printOutput(path);
         return orderedStates;
     }
 
@@ -195,7 +203,7 @@ public class Sampler {
 //                System.out.println(dx + ", " + dy);
 
                 double ddx = Math.abs(node.getPos().getX() - focusBox.getEndPos().getX());
-                double ddy = Math.abs(node.getPos().getX() - focusBox.getEndPos().getX());
+                double ddy = Math.abs(node.getPos().getY() - focusBox.getEndPos().getY());
 
                 node.setDistanceToGoal(Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2)));
                 neighbourNodes.add(node);
@@ -203,5 +211,94 @@ public class Sampler {
         }
 
         return neighbourNodes;
+    }
+
+    public List<MovingBox> buildStep(MovingBox origin, MovingBox end){
+
+        // check path between origin and end (Rec around the origin and end points)
+        Point2D mapOrigin = new Point2D.Double(min(origin.getRect().getMinX(), end.getRect().getMinX()),
+                min(origin.getRect().getMinY(), end.getRect().getMinY()));
+
+        double width = Math.abs(mapOrigin.getX() - max(origin.getRect().getMinX(), end.getRect().getMaxX()));
+        double height = Math.abs(mapOrigin.getY() - max(origin.getRect().getMinY(), end.getRect().getMaxY()));
+
+        Rectangle2D pathSpace = new Rectangle2D.Double(
+                mapOrigin.getX(), mapOrigin.getY(), width, height);
+
+
+
+        // build path
+        List<MovingBox> path = new ArrayList<>();
+        path.add(origin);
+
+        double goalX = getReducedDouble(end.getPos().getX(), 3);
+        double goalY = getReducedDouble(end.getPos().getY(), 3);
+
+        System.out.println(goalX + ", " + goalY);
+
+
+        double curX = -1, curY = -1;
+
+        while(curX != goalX || curY != goalY){
+            MovingBox last = path.get((path.size() - 1));
+
+            double lastX = getReducedDouble(last.getPos().getX(), 3);
+            double lastY = getReducedDouble(last.getPos().getY(), 3);
+
+            // correct X position
+            if(last.getPos().getX() < goalX){ //move right
+                curX = lastX + minStepSize;
+                curY = lastY;
+            }
+            else if(last.getPos().getX() > goalX){ //move left
+                curX = lastX - minStepSize;
+                curY = lastY;
+            }
+
+            // correct Y position
+            else if(last.getPos().getY() < goalY){ //move up
+                curX = lastX;
+                curY = lastY + minStepSize;
+            }
+            else if(last.getPos().getY() > goalY){ //move down
+                curX = lastX;
+                curY = lastY - minStepSize;
+
+            }
+
+            // need check to see if path intersects with moving object
+            // if the path intersects with the moving object
+            // move intersecting object ...new c-space from this point???
+            // ideally want to move it out of the path
+            // given the end and origin move obstacle away from end??? ...that would be origin though???
+
+            MovingBox projMB = new MovingBox(
+                    new Point2D.Double(curX, curY), last.getWidth());
+
+            // can check projected, if intersects with obstacle
+
+            path.add(projMB);
+
+        }
+
+        return path;
+    }
+
+    private double getReducedDouble(double value, int to){
+        return BigDecimal.valueOf(value)
+                .setScale(to, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    private double min(double v1, double v2){
+        if(v1 < v2) return v1;
+
+        return v2;
+    }
+
+    private double max(double v1, double v2){
+        if(v1 > v2) return v1;
+
+        return v2;
     }
 }
