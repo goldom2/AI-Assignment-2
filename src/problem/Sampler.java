@@ -42,7 +42,7 @@ public class Sampler {
      * @param cur_pos
      * @return
      */
-    private State createNewState(State origin, MovingBox mb, MovingBox cur_pos){
+    private State createNewState(State origin, MovingBox mb, MovingBox cur_pos, List<MovingObstacle> obsPos){
         List<MovingBox> newMovingBoxes = new ArrayList<>();
 
         for(MovingBox box : origin.getMovingBoxes()){
@@ -55,7 +55,7 @@ public class Sampler {
                 newMovingBoxes.add(box);
             }
         }
-        return new State(origin.getRobo(), newMovingBoxes, origin.getMovingObstacles());
+        return new State(origin.getRobo(), newMovingBoxes, obsPos);
     }
 
     private State sampleNewState(State origin, MovingBox mb){
@@ -142,7 +142,8 @@ public class Sampler {
         focusBox = movingBoxes.get(0);
 
         List<State> path = new ArrayList<>();
-        State step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, focusBox);
+        State step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, focusBox, movingObstacles);
+        State prev;
         path.add(step);
 
         MovingBox og = movingBoxes.get(0);
@@ -150,12 +151,26 @@ public class Sampler {
 
         while(count < 100){ //hard limit placed
             MovingBox next = continueMovingBoxPath(og);
+            prev = step;
 
             if(next != null) {
 //                System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
 
                 for(MovingBox sStep : buildStep(og, next)){
-                    step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, sStep);
+
+                    // check path between origin and end (Rec around the origin and end points)
+                    Point2D mapOrigin = new Point2D.Double(min(og.getRect().getMinX(), next.getRect().getMinX()),
+                            min(og.getRect().getMinY(), next.getRect().getMinY()));
+
+                    double width = Math.abs(mapOrigin.getX() - max(og.getRect().getMinX(), next.getRect().getMaxX()));
+                    double height = Math.abs(mapOrigin.getY() - max(og.getRect().getMinY(), next.getRect().getMaxY()));
+
+                    Rectangle2D pathSpace = new Rectangle2D.Double(
+                            mapOrigin.getX(), mapOrigin.getY(), width, height);
+
+                    List<MovingObstacle> newMoPos = moveMovingObstacles(pathSpace, prev);
+
+                    step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, sStep, newMoPos);
                     path.add(step);
                 }
 
@@ -213,19 +228,63 @@ public class Sampler {
         return neighbourNodes;
     }
 
+    public List<MovingObstacle> moveMovingObstacles(Rectangle2D pathSpace, State curState){
+        List<MovingObstacle> newObstPos = new ArrayList<>();
+
+        for(MovingObstacle mo : curState.getMovingObstacles()){
+
+            newObstPos.add(mo);
+            if(mo.getRect().intersects(pathSpace)){ // a moving obstacle intersects with path
+
+                // BFS approach, find a lateral direction where the obstacle can be moved outside of the path
+                List<Point2D> validPos = new ArrayList<>();
+                validPos.add(new Point2D.Double((mo.getPos().getX() - (pathSpace.getWidth() + mo.getWidth())), mo.getPos().getY()));
+                validPos.add(new Point2D.Double((mo.getPos().getX() + (pathSpace.getWidth() + mo.getWidth())), mo.getPos().getY()));
+                validPos.add(new Point2D.Double(mo.getPos().getX(), (mo.getPos().getY() - (pathSpace.getHeight() + mo.getWidth()))));
+                validPos.add(new Point2D.Double(mo.getPos().getX(), (mo.getPos().getY() + (pathSpace.getHeight() + mo.getWidth()))));
+
+                for(Point2D pos : validPos){
+                    MovingObstacle newMO = new MovingObstacle(pos, mo.getWidth());
+
+                    if(validateNewMovingObjectPos(newMO, curState)){
+                        newObstPos.set(movingObstacles.indexOf(mo), newMO);
+                        break;
+                    }
+
+                    // need a condition for if the obstacle can't be moved
+                }
+            }
+        }
+
+        // ideally should return a new state
+        return newObstPos;
+    }
+
+    private boolean validateNewMovingObjectPos(MovingObstacle mo, State curState){
+        //validate this position (given you are already out of path, need to check MovingBoxes/StaticObstacles/other
+        // MovingObstacles ...not mo)
+        for(MovingBox mb : curState.getMovingBoxes()){
+            if(mb.getRect().intersects(mo.getRect())){
+                return false;
+            }
+        }
+
+        for(MovingObstacle altmo : curState.getMovingObstacles()){
+            if(!altmo.equals(mo) && altmo.getRect().intersects(mo.getRect())){
+                return false;
+            }
+        }
+
+        for(StaticObstacle so : staticObstacles){
+            if(so.getRect().intersects(mo.getRect())){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public List<MovingBox> buildStep(MovingBox origin, MovingBox end){
-
-        // check path between origin and end (Rec around the origin and end points)
-        Point2D mapOrigin = new Point2D.Double(min(origin.getRect().getMinX(), end.getRect().getMinX()),
-                min(origin.getRect().getMinY(), end.getRect().getMinY()));
-
-        double width = Math.abs(mapOrigin.getX() - max(origin.getRect().getMinX(), end.getRect().getMaxX()));
-        double height = Math.abs(mapOrigin.getY() - max(origin.getRect().getMinY(), end.getRect().getMaxY()));
-
-        Rectangle2D pathSpace = new Rectangle2D.Double(
-                mapOrigin.getX(), mapOrigin.getY(), width, height);
-
-
 
         // build path
         List<MovingBox> path = new ArrayList<>();
