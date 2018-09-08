@@ -1,5 +1,7 @@
 package problem;
 
+import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
 
@@ -9,12 +11,17 @@ public class State {
     private List<MovingBox> movingBoxes;
     private List<MovingObstacle> movingObstacles;
 
-
+    private double roboWidth;
+    private boolean roboAttach;
 
     public State(RobotConfig robot,
              List<MovingBox> movingBoxes,
              List<MovingObstacle> movingObstacles){
+
         this.robot = robot;
+        this.roboWidth = movingBoxes.get(0).getWidth();
+        this.roboAttach =  false;
+
         this.movingBoxes = movingBoxes;
         this.movingObstacles = movingObstacles;
     }
@@ -31,9 +38,22 @@ public class State {
         Rectangle2D space = new Rectangle2D.Double(0, 0, 1, 1);
         // Check all moving boxes are valid
         for (int i = 0; i < movingBoxes.size(); i++) {
+
+            if(robot.getPos().equals(movingBoxes.get(i).getPos())){
+                roboAttach = true;
+            }else{
+                roboAttach = false;
+            }
+
             if (!space.contains(movingBoxes.get(i).getRect())) {
                 return false;
             }
+
+            if(getRoboConfigAsRec().intersects(movingBoxes.get(i).getRect()) &&
+                roboAttach == false){
+                return false;
+            }
+
             for (int j = 0; j < obstacles.size(); j++) {
                 if (movingBoxes.get(i).getRect().intersects(obstacles.get(j).getRect())) {
                     return false;
@@ -58,6 +78,9 @@ public class State {
             if (!space.contains(movingObstacles.get(i).getRect())) {
                 return false;
             }
+            if(getRoboConfigAsRec().intersects(movingObstacles.get(i).getRect())){
+                return false;
+            }
             for (int j = 0; j < obstacles.size(); j++) {
                 if (movingObstacles.get(i).getRect().intersects(obstacles.get(j).getRect())) {
                     return false;
@@ -68,6 +91,12 @@ public class State {
                         && i != j) {
                     return false;
                 }
+            }
+        }
+
+        for (int i = 0; i < obstacles.size(); i++){
+            if(getRoboConfigAsRec().intersects(obstacles.get(i).getRect())){
+                return false;
             }
         }
 
@@ -126,5 +155,12 @@ public class State {
             output += " " + (obstacle.getRect().getMinY() + obstacle.getWidth() / 2);
         }
         return output;
+    }
+
+    private Line2D getRoboConfigAsRec(){
+        Point2D p1 = new Point2D.Double(robot.getX1(roboWidth), robot.getY1(roboWidth));
+        Point2D p2 = new Point2D.Double(robot.getX2(roboWidth), robot.getY2(roboWidth));
+
+        return new Line2D.Double(p1, p2);    //why RoboConfig doesn't extend Line2D is a joke...
     }
 }

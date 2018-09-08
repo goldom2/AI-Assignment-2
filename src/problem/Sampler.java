@@ -1,5 +1,6 @@
 package problem;
 
+import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -24,6 +25,8 @@ public class Sampler {
 
     private MovingBox focusBox;
     private double roboWidth;
+
+    private Set<RobotConfig> posRoboConfig;
 
     public Sampler(RobotConfig robo,
                    List<MovingBox> movingBoxes,
@@ -59,6 +62,26 @@ public class Sampler {
             }
         }
         return new State(newRobo, newMovingBoxes, obsPos);
+    }
+
+    private Set<RobotConfig> sampleNewRobo(State origin, RobotConfig roboConfig){
+
+        Set<RobotConfig> posRobo = new HashSet<>();
+        int count = 0;
+
+        while(count < 10000){
+            RobotConfig newConfig = new RobotConfig(
+                    new Point2D.Double(Math.random(), Math.random()), roboConfig.getOrientation());
+            State temp = new State(newConfig, origin.getMovingBoxes(), origin.getMovingObstacles());
+
+            if(temp.isValid(staticObstacles)){
+                posRobo.add(newConfig);
+            }
+
+            count++;
+        }
+
+        return posRobo;
     }
 
     private State sampleNewState(State origin, MovingBox mb){
@@ -112,12 +135,24 @@ public class Sampler {
         update.addAll(movingBoxes);
 
         boolean origin = true;
-        List<State> orderedStates = new ArrayList<>();
+        State og = new State(robo, movingBoxes, movingObstacles);
 
+        List<State> orderedStates = new ArrayList<>();
+        List<State> path = new ArrayList<>();
+
+        posRoboConfig = sampleNewRobo(og, robo);
+
+        //mapped moving Boxes at assumed states
         for(MovingBox mb : movingBoxes){
+
+            //need to put the bot one step before
+            Point2D abridged = new Point2D.Double(mb.getPos().getX() - 0.001, mb.getPos().getY() - 0.001);
+            mb.setDockPos(abridged);
+            posRoboConfig.add(new RobotConfig(abridged, robo.getOrientation()));
+
             if(origin){
                 for(int i = 0; i < 1000; i++){
-                    nextState = sampleNewState(new State(robo, movingBoxes, movingObstacles), mb);
+                    nextState = sampleNewState(og, mb);
 
                     if(nextState != null){
                         orderedStates.add(nextState);
@@ -135,65 +170,58 @@ public class Sampler {
                 }
             }
 
-            update.set(update.indexOf(mb), new MovingBox(
-                    new Point2D.Double(mb.getEndPos().getX(), mb.getEndPos().getY()), mb.getWidth()));
+            MovingBox arrived = new MovingBox(
+                    new Point2D.Double(mb.getEndPos().getX(), mb.getEndPos().getY()), mb.getWidth());
+            update.set(update.indexOf(mb), arrived);
         }
 
 //        printOutput(orderedStates);
 
-        int count = 0;
-        focusBox = movingBoxes.get(0);
-
-        List<State> path = new ArrayList<>();
         State step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, focusBox, movingObstacles, robo);
-        State prev;
         path.add(step);
 
-        MovingBox og = movingBoxes.get(0);
-//        System.out.println(og.getPos().getX() + ", " + og.getPos().getY());
+        for(MovingBox mbog : movingBoxes){ //hard limit placed
 
-        prev = step;
-        for(RobotConfig newRobo : moveBot(og.getPos(), prev)){
-            step = createNewState(new State(robo, movingBoxes, movingObstacles),
-                    focusBox, focusBox, movingObstacles, newRobo);
-            System.out.println(step.getRobo().getPos().getX() + ", " + step.getRobo().getPos().getY());
-            path.add(step);
+            focusBox = mbog;
+            MovingBox init = mbog;
+
+            State intoNewBox = step;
+            path.addAll(pathBot(robo, intoNewBox, focusBox.getDockPos()));
+            int count = 0;
+
+            while(count < 10){
+                MovingBox next = continueMovingBoxPath(init);
+
+                if(next != null) {
+//                    System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
+
+                    for(MovingBox sStep : buildStep(init, next)){
+
+                        // check path between origin and end (Rec around the origin and end points)
+                        Point2D mapOrigin = new Point2D.Double(min(focusBox.getRect().getMinX(), next.getRect().getMinX()),
+                                min(focusBox.getRect().getMinY(), next.getRect().getMinY()));
+
+                        double width = Math.abs(mapOrigin.getX() - max(focusBox.getRect().getMaxX(), next.getRect().getMaxX()));
+                        double height = Math.abs(mapOrigin.getY() - max(focusBox.getRect().getMaxY(), next.getRect().getMaxY()));
+
+                        Rectangle2D pathSpace = new Rectangle2D.Double(
+                                mapOrigin.getX(), mapOrigin.getY(), width, height);
+
+                        List<MovingObstacle> newMoPos = moveMovingObstacles(pathSpace, step);
+
+                        step = createNewState(intoNewBox, focusBox, sStep, newMoPos, robo);
+                        path.add(step);
+                    }
+
+                    init = next;
+                }else{
+                    System.out.println("next == null");
+                }
+
+                count++;
+            }
         }
-
-
-//        while(count < 100){ //hard limit placed
-
-//            MovingBox next = continueMovingBoxPath(og);
 //
-//            if(next != null) {
-////                System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
-//
-//                for(MovingBox sStep : buildStep(og, next)){
-//
-//                    // check path between origin and end (Rec around the origin and end points)
-//                    Point2D mapOrigin = new Point2D.Double(min(og.getRect().getMinX(), next.getRect().getMinX()),
-//                            min(og.getRect().getMinY(), next.getRect().getMinY()));
-//
-//                    double width = Math.abs(mapOrigin.getX() - max(og.getRect().getMinX(), next.getRect().getMaxX()));
-//                    double height = Math.abs(mapOrigin.getY() - max(og.getRect().getMinY(), next.getRect().getMaxY()));
-//
-//                    Rectangle2D pathSpace = new Rectangle2D.Double(
-//                            mapOrigin.getX(), mapOrigin.getY(), width, height);
-//
-//                    List<MovingObstacle> newMoPos = moveMovingObstacles(pathSpace, prev);
-//
-//                    step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, sStep, newMoPos);
-//                    path.add(step);
-//                }
-//
-//                og = next;
-//            }else{
-//                System.out.println("next == null");
-//            }
-//
-//            count++;
-//        }
-
         printOutput(path);
         return orderedStates;
     }
@@ -226,8 +254,6 @@ public class Sampler {
             double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
 
             if(dx < 0.1 && dy < 0.1){
-
-//                System.out.println(dx + ", " + dy);
 
                 double ddx = Math.abs(node.getPos().getX() - focusBox.getEndPos().getX());
                 double ddy = Math.abs(node.getPos().getY() - focusBox.getEndPos().getY());
@@ -305,7 +331,8 @@ public class Sampler {
         double goalX = getReducedDouble(end.getPos().getX(), 3);
         double goalY = getReducedDouble(end.getPos().getY(), 3);
 
-        double curX = -1, curY = -1;
+        double curX = getReducedDouble(origin.getPos().getX(), 3);
+        double curY = getReducedDouble(origin.getPos().getY(), 3);
 
         while(curX != goalX || curY != goalY){
             MovingBox last = path.get((path.size() - 1));
@@ -314,24 +341,21 @@ public class Sampler {
             double lastY = getReducedDouble(last.getPos().getY(), 3);
 
             // correct X position
-            if(last.getPos().getX() < goalX){ //move right
+            if (lastX < goalX) { //move right
                 curX = lastX + minStepSize;
                 curY = lastY;
-            }
-            else if(last.getPos().getX() > goalX){ //move left
+            } else if (lastX > goalX) { //move left
                 curX = lastX - minStepSize;
                 curY = lastY;
             }
 
             // correct Y position
-            else if(last.getPos().getY() < goalY){ //move up
+            else if (lastY < goalY) { //move up
                 curX = lastX;
                 curY = lastY + minStepSize;
-            }
-            else if(last.getPos().getY() > goalY){ //move down
+            } else if (lastY > goalY) { //move down
                 curX = lastX;
                 curY = lastY - minStepSize;
-
             }
 
             // need check to see if path intersects with moving object
@@ -352,27 +376,48 @@ public class Sampler {
         return path;
     }
 
-    private boolean checkRoboProj(RobotConfig robo, double scaleX, double scaleY, State state){
+    // the idea behind this method was to test for situations where the robot has to go around large obstacles
+//    private RobotConfig pathProj(RobotConfig prev, RobotConfig next, State state){
+//        List<Rectangle2D> path = new ArrayList<>();
+//
+//        List<RobotConfig> testPoints = new ArrayList<>();
+//        testPoints.add(new RobotConfig(
+//                new Point2D.Double(prev.getPos().getX(), next.getPos().getY()), prev.getOrientation()));
+//        testPoints.add(new RobotConfig(
+//                new Point2D.Double(next.getPos().getX(), prev.getPos().getY()), prev.getOrientation()));
+//
+//        for(RobotConfig point : testPoints){
+//            if(validateRoboTransition(prev, point, state)){
+//                return point;
+//            }
+//        }
+//
+//        return null;
+//    }
 
-        Point2D p1 = new Point2D.Double(robo.getX1(roboWidth) + scaleX, robo.getY1(roboWidth) + scaleY);
-        Point2D p2 = new Point2D.Double(robo.getX2(roboWidth) + scaleX, robo.getY2(roboWidth) + scaleY);
+    private boolean validateRoboTransition(RobotConfig prev, RobotConfig next, State state){
 
-        Line2D roboProj = new Line2D.Double(p1, p2);    //why RoboConfig doesn't extend Line2D is a joke...
+        Point2D projPoint =  new Point2D.Double(min(prev.getX1(roboWidth), next.getX1(roboWidth)) - roboWidth/2,
+                min(prev.getY1(roboWidth), next.getY1(roboWidth)));
+        double width = Math.abs(projPoint.getX() - max(prev.getX2(roboWidth), next.getX2(roboWidth))) + roboWidth/2;
+        double height = Math.abs(projPoint.getY() - max(prev.getY2(roboWidth), next.getY2(roboWidth)));
+
+        Rectangle2D pathProjection = new Rectangle2D.Double(projPoint.getX(), projPoint.getY(), width, height);
 
         for(MovingBox mb : state.getMovingBoxes()){
-            if(roboProj.intersects(mb.getRect())){
+            if(pathProjection.intersects(mb.getRect())){
                 return false;
             }
         }
 
         for(MovingObstacle altmo : state.getMovingObstacles()){
-            if(roboProj.intersects(altmo.getRect())){
+            if(pathProjection.intersects(altmo.getRect())){
                 return false;
             }
         }
 
         for(StaticObstacle so : staticObstacles){
-            if(roboProj.intersects(so.getRect())){
+            if(pathProjection.intersects(so.getRect())){
                 return false;
             }
         }
@@ -380,68 +425,123 @@ public class Sampler {
         return true;
     }
 
+    private RobotConfig findNextRobo(RobotConfig curRobo, Point2D end, State state, List<RobotConfig> observed){
+
+        double curBest = 1;
+        RobotConfig path = curRobo;
+
+        for(RobotConfig node : posRoboConfig){
+
+            double dx = Math.abs(curRobo.getPos().getX() - node.getPos().getX());
+            double dy = Math.abs(curRobo.getPos().getY() - node.getPos().getY());
+
+            if(dx < 0.05 && dy < 0.05){
+
+                double ddx = Math.abs(node.getPos().getX() - end.getX());
+                double ddy = Math.abs(node.getPos().getY() - end.getY());
+
+                double dist = Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2));
+
+                if(validateRoboTransition(curRobo, node, state) && dist < curBest && !observed.contains(node)){
+//                    System.out.println(curBest + " " + dist + " " + (dist < curBest) + " " + validateRoboTransition(curRobo, node, state));
+//                    System.out.println(node.getPos().getX() +  ", " + node.getPos().getY());
+
+                    curBest = dist;
+                    path = node;
+
+                }
+            }
+        }
+
+        return path;
+    }
+
+    private List<State> pathBot(RobotConfig origin, State state, Point2D end){
+
+        List<State> path = new ArrayList<>();
+        List<RobotConfig> markers = new ArrayList<>();
+
+        path.add(createNewState(state, focusBox, focusBox, state.getMovingObstacles(), origin));
+        markers.add(origin);
+        int count = 0;
+
+        RobotConfig prev;
+        RobotConfig next;
+
+        do{
+            // find neighbours
+            prev = markers.get(markers.size() - 1);
+            next = findNextRobo(prev, end, state, markers);
+            // path to neighbour
+//            System.out.println("prev: " + markers.get(markers.size() - 1).getPos().getX() + ", " + markers.get(markers.size() - 1).getPos().getY());
+//            System.out.println("next: " + next.getPos().getX() + ", " + next.getPos().getY());
+
+            path.addAll(moveBot(next.getPos(), state, prev));
+
+//            path.add(new State(next, state.getMovingBoxes(), state.getMovingObstacles()));
+
+            markers.add(next);
+            count++;
+
+//            System.out.println(count + ": " + next.getPos().getX() + ", " + next.getPos().getY());
+//            System.out.println(count + ": " + focusBox.getDockPos().getX() + ", " + focusBox.getDockPos().getY());
+//            System.out.println(count + ": " + end.equals(next.getPos()));
+        }while (!end.equals(next.getPos()));
+
+        // return total path
+        return path;
+    }
+
     // this is won't work "well" needs to be redone with c-space
-    private List<RobotConfig> moveBot(Point2D end, State state){
+    private List<State> moveBot(Point2D end, State state, RobotConfig marker){
 
         // check orientation (0 == horizontal. 90/180 == vertical)
         // robot-pos marked as the center of the robot
 
-        List<RobotConfig> path = new ArrayList<>();
-        List<RobotConfig> rejected = new ArrayList<>();
-        path.add(state.getRobo());
+        List<State> path = new ArrayList<>();
+        path.add(new State(marker, state.getMovingBoxes(), state.getMovingObstacles()));
 
-        double curX = -1, curY = -1;
-        double goalX = end.getX(), goalY = end.getY();
+        double curX = marker.getPos().getX();
+        double curY = marker.getPos().getY();
+
+        double goalX = getReducedDouble(end.getX(), 3);
+        double goalY = getReducedDouble(end.getY(), 3);
+//        System.out.println("cur: " + curX + ", " + curY);
+//        System.out.println("goal: " + goalX + ", " + goalY);
 
         while(curX != goalX || curY != goalY){
-            RobotConfig last = path.get((path.size() - 1));
+            RobotConfig last = path.get((path.size() - 1)).getRobo();
 
             double lastX = getReducedDouble(last.getPos().getX(), 3);
             double lastY = getReducedDouble(last.getPos().getY(), 3);
 
             // correct X position
-            if(last.getPos().getX() < goalX){
-                if(checkRoboProj(last, lastX  + minStepSize, lastY, state)){ //move up
-                    curX = lastX;
-                    curY = lastY + minStepSize;
-                }else{ //something in the path
-
-                }
-            }
-            else if(last.getPos().getX() > goalX){
-                if(checkRoboProj(last, lastX  - minStepSize, lastY, state)){ //move up
-                    curX = lastX;
-                    curY = lastY + minStepSize;
-                }else{ //something in the path
-
-                }
+            if (lastX < goalX) { //move right
+                curX = lastX + minStepSize;
+                curY = lastY;
+            } else if (lastX > goalX) { //move left
+                curX = lastX - minStepSize;
+                curY = lastY;
             }
 
             // correct Y position
-            else if(last.getPos().getY() < goalY){
-                if(checkRoboProj(last, 0, lastY + minStepSize, state)){ //move up
-                    curX = lastX;
-                    curY = lastY + minStepSize;
-                }else{ //something in the path
-
-                }
-            }
-            else if(last.getPos().getY() > goalY){
-                if(checkRoboProj(last, 0, lastY - minStepSize, state)){ //move up
-                    curX = lastX;
-                    curY = lastY - minStepSize;
-                }else{ //something in the path
-
-                }
-
+            else if (lastY < goalY) { //move up
+                curX = lastX;
+                curY = lastY + minStepSize;
+            } else if (lastY > goalY) { //move down
+                curX = lastX;
+                curY = lastY - minStepSize;
             }
 
+            curX = getReducedDouble(curX, 3);
+            curY = getReducedDouble(curY, 3);
+
+//            System.out.println("cur: " + curX + ", " + curY);
             RobotConfig newRoboConfig = new RobotConfig(
                     new Point2D.Double(curX, curY), state.getRobo().getOrientation());
 
             // can check projected, if intersects with obstacle
-
-            path.add(newRoboConfig);
+            path.add(new State(newRoboConfig, state.getMovingBoxes(), state.getMovingObstacles()));
         }
 
         return path;

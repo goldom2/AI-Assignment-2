@@ -25,6 +25,8 @@ public class MovingBox extends Box {
 	 */
 
 	private Point2D endPos;
+	private Point2D dockPos;
+
 	private double distance;
 	private Set<MovingBox> nodeList = new HashSet<>();
 
@@ -68,4 +70,9 @@ public class MovingBox extends Box {
 	public Point2D getEndPos(){
     	return endPos;
 	}
+
+	public Point2D getDockPos() { return dockPos; }
+
+	public void setDockPos(Point2D dockPos) { this.dockPos = dockPos; }
+
 }
