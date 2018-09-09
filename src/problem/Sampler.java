@@ -141,6 +141,9 @@ public class Sampler {
         List<State> path = new ArrayList<>();
 
         posRoboConfig = sampleNewRobo(og, robo);
+//        for(RobotConfig rc : posRoboConfig){
+//            path.add(new State(rc, movingBoxes, movingObstacles));
+//        }
 
         //mapped moving Boxes at assumed states
         for(MovingBox mb : movingBoxes){
@@ -149,7 +152,6 @@ public class Sampler {
             Point2D abridged = new Point2D.Double(mb.getPos().getX() - 0.001, mb.getPos().getY() - 0.001);
             mb.setDockPos(abridged);
             posRoboConfig.add(new RobotConfig(abridged, robo.getOrientation()));
-
             if(origin){
                 for(int i = 0; i < 1000; i++){
                     nextState = sampleNewState(og, mb);
@@ -174,8 +176,6 @@ public class Sampler {
                     new Point2D.Double(mb.getEndPos().getX(), mb.getEndPos().getY()), mb.getWidth());
             update.set(update.indexOf(mb), arrived);
         }
-
-//        printOutput(orderedStates);
 
         State step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, focusBox, movingObstacles, robo);
         path.add(step);
@@ -221,7 +221,7 @@ public class Sampler {
                 count++;
             }
         }
-//
+
         printOutput(path);
         return orderedStates;
     }
@@ -377,29 +377,28 @@ public class Sampler {
     }
 
     // the idea behind this method was to test for situations where the robot has to go around large obstacles
-//    private RobotConfig pathProj(RobotConfig prev, RobotConfig next, State state){
-//        List<Rectangle2D> path = new ArrayList<>();
-//
-//        List<RobotConfig> testPoints = new ArrayList<>();
-//        testPoints.add(new RobotConfig(
-//                new Point2D.Double(prev.getPos().getX(), next.getPos().getY()), prev.getOrientation()));
-//        testPoints.add(new RobotConfig(
-//                new Point2D.Double(next.getPos().getX(), prev.getPos().getY()), prev.getOrientation()));
-//
-//        for(RobotConfig point : testPoints){
-//            if(validateRoboTransition(prev, point, state)){
-//                return point;
-//            }
-//        }
-//
-//        return null;
-//    }
+    private RobotConfig pathProj(RobotConfig prev, RobotConfig next, State state){
+
+        List<RobotConfig> testPoints = new ArrayList<>();
+        testPoints.add(new RobotConfig(
+                new Point2D.Double(prev.getPos().getX(), next.getPos().getY()), prev.getOrientation()));
+        testPoints.add(new RobotConfig(
+                new Point2D.Double(next.getPos().getX(), prev.getPos().getY()), prev.getOrientation()));
+
+        for(RobotConfig point : testPoints){
+            if(validateRoboTransition(prev, point, state) &&
+                    validateRoboTransition(point, next, state)){
+                return point;    // should return adjoining point
+            }
+        }
+        return null;
+    }
 
     private boolean validateRoboTransition(RobotConfig prev, RobotConfig next, State state){
 
-        Point2D projPoint =  new Point2D.Double(min(prev.getX1(roboWidth), next.getX1(roboWidth)) - roboWidth/2,
+        Point2D projPoint =  new Point2D.Double(min(prev.getX1(roboWidth), next.getX1(roboWidth)) + minStepSize,
                 min(prev.getY1(roboWidth), next.getY1(roboWidth)));
-        double width = Math.abs(projPoint.getX() - max(prev.getX2(roboWidth), next.getX2(roboWidth))) + roboWidth/2;
+        double width = Math.abs(projPoint.getX() - max(prev.getX2(roboWidth), next.getX2(roboWidth))) - minStepSize;
         double height = Math.abs(projPoint.getY() - max(prev.getY2(roboWidth), next.getY2(roboWidth)));
 
         Rectangle2D pathProjection = new Rectangle2D.Double(projPoint.getX(), projPoint.getY(), width, height);
@@ -441,6 +440,11 @@ public class Sampler {
                 double ddy = Math.abs(node.getPos().getY() - end.getY());
 
                 double dist = Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2));
+
+//                if(pathProj(curRobo, node, state) != null){
+//                    System.out.println(pathProj(curRobo, node, state).getPos().getX() +
+//                            ", " + pathProj(curRobo, node, state).getPos().getY());
+//                }
 
                 if(validateRoboTransition(curRobo, node, state) && dist < curBest && !observed.contains(node)){
 //                    System.out.println(curBest + " " + dist + " " + (dist < curBest) + " " + validateRoboTransition(curRobo, node, state));
@@ -486,7 +490,7 @@ public class Sampler {
 //            System.out.println(count + ": " + next.getPos().getX() + ", " + next.getPos().getY());
 //            System.out.println(count + ": " + focusBox.getDockPos().getX() + ", " + focusBox.getDockPos().getY());
 //            System.out.println(count + ": " + end.equals(next.getPos()));
-        }while (!end.equals(next.getPos()));
+        }while (!end.equals(next.getPos()) && count < 50);
 
         // return total path
         return path;
