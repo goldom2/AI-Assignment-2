@@ -125,8 +125,114 @@ public class Sampler {
             System.out.println("Error writing solution file");
             e.printStackTrace();
         }
-
     }
+
+    public Point2D findDock(RobotConfig origin, MovingBox mb){
+        Point2D center = new Point2D.Double(mb.getPos().getX() + mb.getWidth()/2, mb.getPos().getY() + mb.getWidth()/2);
+        Point2D newPt = origin.getPos();
+
+        double dist = 1;
+
+        List<Point2D> dockPos = new ArrayList<>();
+        dockPos.add(new Point2D.Double(center.getX() + mb.getWidth(), center.getY()));    //right hand side ...robo width 0.01
+        dockPos.add(new Point2D.Double(center.getX() - mb.getWidth(), center.getY()));    //left hand side
+        dockPos.add(new Point2D.Double(center.getX(), center.getY() + mb.getWidth()/2 + 0.001));    //upper hand side
+        dockPos.add(new Point2D.Double(center.getX(), center.getY() - mb.getWidth()/2 - 0.001));    //under hand side
+
+        for(Point2D point : dockPos){
+            double proj = origin.getPos().distance(point);
+            if(proj < dist){
+                dist = proj;
+                newPt = point;
+            }
+        }
+
+        return newPt;
+    }
+
+    public List<State> rotateBot(RobotConfig robo, double target, State state){
+        List<State> path = new ArrayList<>();
+
+        double angle = robo.getOrientation()/(Math.PI/180);
+        double maxIncrementAngle = (minStepSize/(Math.PI*(roboWidth/2)))*360;
+        double margin = maxIncrementAngle*Math.floor(Math.abs(target - angle)/maxIncrementAngle);
+        double offset = Math.abs(target - margin);
+
+        if(angle < target){
+            while(angle < (margin - offset)){
+                angle += maxIncrementAngle;
+                System.out.println(angle);
+                path.add(new State(new RobotConfig(robo.getPos(), angle*(Math.PI/180)), state.getMovingBoxes(), state.getMovingObstacles()));
+            }
+
+            angle += offset;
+            System.out.println(angle);
+            path.add(new State(new RobotConfig(robo.getPos(), angle*(Math.PI/180)), state.getMovingBoxes(), state.getMovingObstacles()));
+        }
+        if(angle > target){
+            while(angle > (margin + offset)){
+                angle -= maxIncrementAngle;
+                path.add(new State(new RobotConfig(robo.getPos(), angle*(Math.PI/180)), state.getMovingBoxes(), state.getMovingObstacles()));
+            }
+
+            angle -= offset;
+            path.add(new State(new RobotConfig(robo.getPos(), angle*(Math.PI/180)), state.getMovingBoxes(), state.getMovingObstacles()));
+        }
+
+        return path;
+    }
+
+    public List<State> orientRobot(MovingBox mb, State state){
+        RobotConfig cur = state.getRobo();
+        List<State> path = new ArrayList<>();
+        path.add(state);
+
+        Point2D center = new Point2D.Double(mb.getPos().getX() + mb.getWidth()/2, mb.getPos().getY() + mb.getWidth()/2);
+
+        if(cur.getPos().getX() > center.getX() || cur.getPos().getX() < center.getX()){    //right/left
+            path.addAll(rotateBot(cur, 90, state));
+            State last = path.get(path.size() - 1);
+
+            while(last.getRobo().getPos().getX() < center.getX() - (roboWidth/2)){
+                Point2D close = new Point2D.Double(last.getRobo().getPos().getX() + minStepSize, last.getRobo().getPos().getY());
+                RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
+                path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
+
+                last = path.get(path.size() - 1);
+            }
+            while(last.getRobo().getPos().getX() > center.getX() + (roboWidth/2)){
+                Point2D close = new Point2D.Double(last.getRobo().getPos().getX() - minStepSize, last.getRobo().getPos().getY());
+                RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
+                path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
+
+                last = path.get(path.size() - 1);
+            }
+
+        }else if(cur.getPos().getY() > center.getY() || cur.getPos().getY() < center.getY()){    //above/below
+            path.addAll(rotateBot(cur, 0, state));
+
+            State last = path.get(path.size() - 1);
+
+            while(last.getRobo().getPos().getY() < center.getY() - (roboWidth/2)){
+                Point2D close = new Point2D.Double(last.getRobo().getPos().getX(), last.getRobo().getPos().getY() + minStepSize);
+                RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
+                path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
+
+                last = path.get(path.size() - 1);
+            }
+            while(last.getRobo().getPos().getY() > center.getY() + (roboWidth/2)){
+                Point2D close = new Point2D.Double(last.getRobo().getPos().getX(), last.getRobo().getPos().getY() - minStepSize);
+                RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
+                path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
+
+                last = path.get(path.size() - 1);
+            }
+        }
+
+
+        return path;
+    }
+
 
     public List<State> stepObjectiveSampling(){
 
@@ -148,10 +254,14 @@ public class Sampler {
         //mapped moving Boxes at assumed states
         for(MovingBox mb : movingBoxes){
 
-            //need to put the bot one step before
-            Point2D abridged = new Point2D.Double(mb.getPos().getX() - 0.001, mb.getPos().getY() - 0.001);
-            mb.setDockPos(abridged);
-            posRoboConfig.add(new RobotConfig(abridged, robo.getOrientation()));
+            //find the most accessible/closest position to "dock" the robot
+            //need the start position for the robot... not necessarily origin
+            Point2D robDockPos = findDock(robo, mb);
+            mb.setDockPos(robDockPos);
+
+//            System.out.println(robDockPos.getX() + ", " + robDockPos.getY());
+            posRoboConfig.add(new RobotConfig(robDockPos, robo.getOrientation()));
+
             if(origin){
                 for(int i = 0; i < 1000; i++){
                     nextState = sampleNewState(og, mb);
@@ -186,7 +296,15 @@ public class Sampler {
             MovingBox init = mbog;
 
             State intoNewBox = step;
-            path.addAll(pathBot(robo, intoNewBox, focusBox.getDockPos()));
+
+            if(!mbog.getDockPos().equals(robo.getPos())){   //path to box
+                path.addAll(pathBot(robo, intoNewBox, focusBox.getDockPos()));
+            }
+
+            path.addAll(orientRobot(mbog, path.get(path.size() - 1)));
+            //orient robot based on position
+
+
             int count = 0;
 
             while(count < 10){
@@ -435,11 +553,7 @@ public class Sampler {
             double dy = Math.abs(curRobo.getPos().getY() - node.getPos().getY());
 
             if(dx < 0.05 && dy < 0.05){
-
-                double ddx = Math.abs(node.getPos().getX() - end.getX());
-                double ddy = Math.abs(node.getPos().getY() - end.getY());
-
-                double dist = Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2));
+                double dist = node.getPos().distance(end);
 
 //                if(pathProj(curRobo, node, state) != null){
 //                    System.out.println(pathProj(curRobo, node, state).getPos().getX() +
@@ -472,6 +586,8 @@ public class Sampler {
         RobotConfig prev;
         RobotConfig next;
 
+//        System.out.println(origin.getPos().getX() + ", " + origin.getPos().getY());
+//        System.out.println(end.getX() + ", " + end.getY());
         do{
             // find neighbours
             prev = markers.get(markers.size() - 1);
