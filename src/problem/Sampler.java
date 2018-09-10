@@ -56,6 +56,7 @@ public class Sampler {
                 MovingBox temp = new MovingBox(
                         new Point2D.Double(cur_pos.getPos().getX(), cur_pos.getPos().getY()), box.getWidth());
                 newMovingBoxes.add(temp);
+                box.addToNodeList(temp);
             }else{
                 newMovingBoxes.add(box);
             }
@@ -248,6 +249,9 @@ public class Sampler {
         List<State> path = new ArrayList<>();
 
         posRoboConfig = sampleNewRobo(og, robo);
+//        for(RobotConfig rc : posRoboConfig){
+//            path.add(new State(rc, movingBoxes, movingObstacles));
+//        }
 
         //mapped moving Boxes at assumed states
         for(MovingBox mb : movingBoxes){
@@ -286,7 +290,6 @@ public class Sampler {
         }
 
         State step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, focusBox, movingObstacles, robo);
-
         path.add(step);
 
         for(MovingBox mbog : movingBoxes){ //hard limit placed
@@ -306,11 +309,12 @@ public class Sampler {
 
             int count = 0;
 
-            while(count < 100){
+            while(count < 1000){
                 MovingBox next = continueMovingBoxPath(init, observed);
-                System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
 
                 if(next != null) {
+                    System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
+
                     // check path between origin and end (Rec around the origin and end points)
                     Point2D mapOrigin = new Point2D.Double(min(init.getRect().getMinX(), next.getRect().getMinX()),
                             min(init.getRect().getMinY(), next.getRect().getMinY()));
@@ -324,6 +328,7 @@ public class Sampler {
                     List<MovingObstacle> newMoPos = moveMovingObstacles(pathSpace, step);
 
                     for(MovingBox sStep : buildStep(init, next)){
+
                         step = createNewState(intoNewBox, focusBox, sStep, newMoPos, robo);
                         path.add(step);
                     }
@@ -342,18 +347,18 @@ public class Sampler {
         return orderedStates;
     }
 
-    public MovingBox continueMovingBoxPath(MovingBox mb, List<MovingBox> observed){
+    public MovingBox continueMovingBoxPath(MovingBox mb, List<MovingBox> mbs){
         MovingBox goal = null;
         boolean correct = true;
 //        System.out.println(mb.getPos().getX() + ", " + mb.getPos().getY());
 
-        for (MovingBox node : getNeighbourNodes(mb, observed)) {
+        for (MovingBox node : getNeighbourNodes(mb)) {
             for(StaticObstacle so : staticObstacles){
                 if(node.getRect().intersects(so.getRect())){
                     correct = false;
                 }
             }
-            if(correct){
+            if(correct && !mbs.contains(node)){
                 // weigh each option (currently using distance and adding by the diagonal)
                 if (goal == null) {   //empty goal
                     goal = node;
@@ -365,11 +370,10 @@ public class Sampler {
             correct = true;
         }
 
-//        System.out.println(goal.getPos().getX() + ", " + goal.getPos().getY());
         return goal;
     }
 
-    public Set<MovingBox> getNeighbourNodes(MovingBox mb, List<MovingBox> observed){
+    public Set<MovingBox> getNeighbourNodes(MovingBox mb){
 
         Set<MovingBox> neighbourNodes = new HashSet<>();
 
@@ -378,7 +382,7 @@ public class Sampler {
             double dx = Math.abs(node.getPos().getX() - mb.getPos().getX());
             double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
 
-            if(dx < 0.05 && dy < 0.05 && !observed.contains(node)){
+            if(dx < 1 && dy < 1){
 
                 double ddx = Math.abs(node.getPos().getX() - focusBox.getEndPos().getX());
                 double ddy = Math.abs(node.getPos().getY() - focusBox.getEndPos().getY());
@@ -388,7 +392,6 @@ public class Sampler {
             }
         }
 
-        System.out.println(neighbourNodes.size());
         return neighbourNodes;
     }
 
@@ -502,80 +505,6 @@ public class Sampler {
         }
 
         return path;
-    }
-
-    public int checkOrientation(MovingBox prev, RobotConfig curRobo){
-        double orienX = (prev.getPos().getX() + prev.getWidth()) - curRobo.getPos().getX();
-        double orienY = (prev.getPos().getY() + prev.getWidth()) - curRobo.getPos().getY();
-
-        if(orienX > 0){ //left
-            return 1;
-        }else if(orienX < 0){ //right
-            return 2;
-        }else if(orienY  > 0){   //down
-            return 3;
-        }else if(orienY < 0){   //up
-            return 4;
-        }
-
-        return 0;
-    }
-
-    public void robotBoxStep(MovingBox prev, MovingBox next, RobotConfig curRobo, State state){
-        //need change in box
-        List<State> path = new ArrayList<>();
-
-        double dx = prev.getPos().getX() - next.getPos().getX();
-        double dy = prev.getPos().getY() - next.getPos().getY();
-
-        RobotConfig build;
-        double step = 0;
-
-        if(dx > 0){ //box moving left
-            switch (checkOrientation(prev, curRobo)){
-                case 2: //right -> left
-                    //shift up
-                    shiftAlongBot('y', prev.getWidth()/2, false, prev, curRobo, state);
-
-                    //rotate horo
-                    path.addAll(rotateBot(curRobo, 0, state));
-
-                    //shift left
-                    shiftAlongBot('x', prev.getWidth(), false, prev, curRobo, state);
-
-                    //rotate vert
-                    path.addAll(rotateBot(curRobo, 90, state));
-
-                    //shift down
-                    shiftAlongBot('y', prev.getWidth()/2, true, prev, curRobo, state);
-                    break;
-                case 3: //down -> left
-                    //shift left
-                    shiftAlongBot('x', prev.getWidth()/2, true, prev, curRobo, state);
-
-                    //rotate vert
-                    path.addAll(rotateBot(curRobo, 90, state));
-
-                    //shift up
-                    shiftAlongBot('y', prev.getWidth()/2, false, prev, curRobo, state);
-
-
-
-                    break;
-                case 4: //up -> left
-                    break;
-            }
-
-        }else if(dx < 0){ //box moving right
-
-        }else if(dy > 0){   //box moving down
-
-        }else if(dy < 0){   //box moving up
-
-        }
-
-
-
     }
 
     // the idea behind this method was to test for situations where the robot has to go around large obstacles
@@ -746,34 +675,6 @@ public class Sampler {
 
             // can check projected, if intersects with obstacle
             path.add(new State(newRoboConfig, state.getMovingBoxes(), state.getMovingObstacles()));
-        }
-
-        return path;
-    }
-
-    private List<State> shiftAlongBot(char axis, double len, boolean dir, MovingBox prev, RobotConfig curRobo, State state){
-        List<State> path = new ArrayList<>();
-        RobotConfig build;
-
-        double sign = 1;
-        if(dir){
-            sign = -1;
-        }
-
-        int step = 0;
-        while(step < len){
-
-            if(axis == 'x'){
-                build = new RobotConfig(
-                        new Point2D.Double(curRobo.getPos().getX() + sign*minStepSize, curRobo.getPos().getY()),
-                        curRobo.getOrientation());
-            }else{
-                build = new RobotConfig(
-                        new Point2D.Double(curRobo.getPos().getX(), curRobo.getPos().getY() + sign*minStepSize),
-                        curRobo.getOrientation());
-            }
-
-            path.add(new State(build, state.getMovingBoxes(), state.getMovingObstacles()));
         }
 
         return path;

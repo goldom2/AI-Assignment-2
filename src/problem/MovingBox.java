@@ -75,4 +75,19 @@ public class MovingBox extends Box {
 
 	public void setDockPos(Point2D dockPos) { this.dockPos = dockPos; }
 
+    @Override
+    public boolean equals(Object o) {
+	    if (o instanceof MovingBox) {
+	        MovingBox other = (MovingBox) o;
+	        if (this.getEndPos() == null || other.getEndPos() == null) {
+	            return super.equals(other)
+                        && this.getEndPos() == null
+                        && other.getEndPos() == null;
+            } else {
+                return super.equals(other)
+                        && this.getEndPos().equals(other.getEndPos());
+            }
+        }
+        return false;
+    }
 }
