@@ -410,8 +410,8 @@ public class Sampler {
         int count = 0;
         while (!queue.isEmpty()) {
             current = getMinimumNode(queue);    //
-//            System.out.println("size: " + queue.size() + " cur best pos: " +
-//                    current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY());
+            System.out.println("size: " + queue.size() + " cur best pos: " +
+                    current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY());
 //            System.out.println("cur weight: " + current.weight);
 
             queue.remove(current);
@@ -420,11 +420,10 @@ public class Sampler {
             }
             for (MovingBox box : getNeighbourNodes(current.getBox())) {
 //                System.out.println("-->> " + box.getPos().getX() + ", " + box.getPos().getY());
-//                double weight = current.weight
-//                        + Math.abs(current.getBox().getPos().getX() - box.getPos().getX())
-//                        + Math.abs(current.getBox().getPos().getY() - box.getPos().getY())
-//                        + heuristic(box, goal);
-                double weight = heuristic(box, goal);
+                double weight = Math.abs(current.getBox().getPos().getX() - box.getPos().getX())
+                        + Math.abs(current.getBox().getPos().getY() - box.getPos().getY())
+                        + heuristic(box, goal);
+//                double weight = heuristic(box, goal);
                 queue.add(new Node(box, weight, current));
             }
 
