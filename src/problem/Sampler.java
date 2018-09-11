@@ -386,12 +386,13 @@ public class Sampler {
             double dx = Math.abs(node.getPos().getX() - mb.getPos().getX());
             double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
 
-            if(dx < 0.1 && dy < 0.1){
+            if(dx < 0.1 && dy < 0.1 && !node.getPos().equals(mb.getPos())){
 
-                double ddx = Math.abs(node.getPos().getX() - focusBox.getEndPos().getX());
-                double ddy = Math.abs(node.getPos().getY() - focusBox.getEndPos().getY());
-
-                node.setDistanceToGoal(Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2)));
+//                double ddx = Math.abs(node.getPos().getX() - focusBox.getEndPos().getX());
+//                double ddy = Math.abs(node.getPos().getY() - focusBox.getEndPos().getY());
+//
+//                node.setDistanceToGoal(Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2)));
+//                node.setEndPos(mb.getEndPos());
                 neighbourNodes.add(node);
             }
         }
@@ -404,30 +405,34 @@ public class Sampler {
 
         MovingBox goal = new MovingBox(mb.getEndPos(), mb.getWidth());
         Set<Node> queue = new HashSet<>();
-        Node current = new Node(mb, 0, null); //how can you minimise if the initial weight is zero
-
+        Set<Point2D> visited = new HashSet<>();
+        Node current = new Node(mb, 0.0, heuristic(mb, goal), null); //how can you minimise if the initial weight is zero
         queue.add(current);
-        int count = 0;
+
         while (!queue.isEmpty()) {
-            current = getMinimumNode(queue);    //
-            System.out.println("size: " + queue.size() + " cur best pos: " +
-                    current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY());
-//            System.out.println("cur weight: " + current.weight);
+            current = getMinimumNode(queue);
+            System.out.println("size: " + queue.size() + " cur pos: "
+                    + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
+                    + " cur weight: " + current.getWeight()
+                    + " heuristic: " + current.getHeuristic()
+                    + " sum: " + (current.getWeight() + current.getHeuristic()));
 
             queue.remove(current);
+            visited.add(current.getBox().getPos());
             if (current.getBox().equals(goal)) {
                 break;
             }
             for (MovingBox box : getNeighbourNodes(current.getBox())) {
 //                System.out.println("-->> " + box.getPos().getX() + ", " + box.getPos().getY());
-                double weight = Math.abs(current.getBox().getPos().getX() - box.getPos().getX())
-                        + Math.abs(current.getBox().getPos().getY() - box.getPos().getY())
-                        + heuristic(box, goal);
+                if (visited.contains(box.getPos())) {
+                    continue;
+                }
+                double weight = current.getWeight() +
+                        + Math.abs(current.getBox().getPos().getX() - box.getPos().getX())
+                        + Math.abs(current.getBox().getPos().getY() - box.getPos().getY());
 //                double weight = heuristic(box, goal);
-                queue.add(new Node(box, weight, current));
+                queue.add(new Node(box, weight, heuristic(box, goal), current));
             }
-
-            count++;
         }
 
         if (!current.getBox().equals(goal)) {
@@ -451,9 +456,14 @@ public class Sampler {
         Node result = null;
         double minWeight = 0;
         for (Node node : queue) {
-            if (result == null || node.getWeight() < minWeight) {
+            // Excluding the heuristic makes it perform like BFS
+//            if (result == null || node.getWeight() < minWeight) {
+//                result = node;
+//                minWeight = node.getWeight();
+//            }
+            if (result == null || (node.getWeight() + node.getHeuristic()) < minWeight) {
                 result = node;
-                minWeight = node.getWeight();
+                minWeight = node.getWeight() + node.getHeuristic();
             }
         }
         return result;
