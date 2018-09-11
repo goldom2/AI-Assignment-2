@@ -307,10 +307,12 @@ public class Sampler {
             //orient robot based on position
 
 
-            int count = 0;
+//            int count = 0;
 
-            while(count < 1000){
-                MovingBox next = continueMovingBoxPath(init, observed);
+//            while(count < 1000){
+//                MovingBox next = continueMovingBoxPath(init, observed);
+            List<MovingBox> boxPath = findBoxPath(focusBox);
+            for (MovingBox next : boxPath) {
 
                 if(next != null) {
                     System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
@@ -339,7 +341,7 @@ public class Sampler {
                     System.out.println("next == null");
                 }
 
-                count++;
+//                count++;
             }
         }
 
@@ -382,7 +384,7 @@ public class Sampler {
             double dx = Math.abs(node.getPos().getX() - mb.getPos().getX());
             double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
 
-            if(dx < 1 && dy < 1){
+            if(dx < 0.05 && dy < 0.05){
 
                 double ddx = Math.abs(node.getPos().getX() - focusBox.getEndPos().getX());
                 double ddy = Math.abs(node.getPos().getY() - focusBox.getEndPos().getY());
@@ -393,6 +395,69 @@ public class Sampler {
         }
 
         return neighbourNodes;
+    }
+
+    public List<MovingBox> findBoxPath(MovingBox mb) {
+        MovingBox goal = new MovingBox(mb.getEndPos(), mb.getWidth());
+        Set<Node> queue = new HashSet<>();
+        Node current = new Node(mb, 0, null);
+        queue.add(current);
+        while (!queue.isEmpty()) {
+            current = getMinimumNode(queue);
+            System.out.println(current.weight);
+            queue.remove(current);
+            if (current.getBox().equals(goal)) {
+                break;
+            }
+            for (MovingBox box : getNeighbourNodes(current.getBox())) {
+                double weight = current.weight
+                        + Math.abs(current.getBox().getPos().getX() - box.getPos().getX())
+                        + Math.abs(current.getBox().getPos().getY() - box.getPos().getY())
+                        + heuristic(box, goal);
+                queue.add(new Node(box, weight, current));
+            }
+        }
+
+        if (!current.equals(goal)) {
+            System.out.println("Could not find a path to the goal");
+            return null;
+        }
+
+        List<MovingBox> boxPath = new ArrayList<>();
+        while (current != null) {
+            boxPath.add(0, current.getBox());
+            current = current.getPrev();
+        }
+
+        return boxPath;
+    }
+
+    public Node getMinimumNode(Set<Node> queue) {
+        Node result = null;
+        double minWeight = 0;
+        for (Node node : queue) {
+            if (result == null || node.getWeight() < minWeight) {
+                result = node;
+                minWeight = node.getWeight();
+            }
+        }
+        return result;
+    }
+
+    public double heuristic(MovingBox box, MovingBox goal) {
+        return distanceToGoal(box, goal);
+    }
+
+    /**
+     * Calculates the minimum distance to the goal
+     *
+     * @return
+     */
+    public double distanceToGoal(MovingBox box, MovingBox goal) {
+        double result = 0;
+        result += Math.abs(box.getPos().getX() - goal.getPos().getX());
+        result += Math.abs(box.getPos().getY() - goal.getPos().getY());
+        return result;
     }
 
     public List<MovingObstacle> moveMovingObstacles(Rectangle2D pathSpace, State curState){
