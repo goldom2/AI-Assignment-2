@@ -49,19 +49,26 @@ public class Sampler {
      * @param cur_pos
      * @return
      */
-    private State createNewState(State origin, MovingBox mb, MovingBox cur_pos, List<MovingObstacle> obsPos, RobotConfig newRobo){
+    private State createNewState(State origin, MovingBox mb, MovingBox cur_pos, List<MovingObstacle> obsPos, RobotConfig newRobo, boolean following){
         List<MovingBox> newMovingBoxes = new ArrayList<>();
+        RobotConfig robotConfig = newRobo;
 
         for(MovingBox box : origin.getMovingBoxes()){
             if(box.equals(mb)){
                 MovingBox temp = new MovingBox(
                         new Point2D.Double(cur_pos.getPos().getX(), cur_pos.getPos().getY()), box.getWidth());
+                if(following){
+                    robotConfig = new RobotConfig(new Point2D.Double(
+                            newRobo.getPos().getX() + (cur_pos.getPos().getX() - mb.getPos().getX()),
+                            newRobo.getPos().getY() + (cur_pos.getPos().getY() - mb.getPos().getY())
+                    ), newRobo.getOrientation());
+                }
                 newMovingBoxes.add(temp);
             }else{
                 newMovingBoxes.add(box);
             }
         }
-        return new State(newRobo, newMovingBoxes, obsPos);
+        return new State(robotConfig, newMovingBoxes, obsPos);
     }
 
     private Set<RobotConfig> sampleNewRobo(State origin, RobotConfig roboConfig){
@@ -157,7 +164,8 @@ public class Sampler {
         List<State> path = new ArrayList<>();
         RobotConfig robo = state.getRobo();
 
-        double angle = robo.getOrientation()/(Math.PI/180);
+        double start = robo.getOrientation()/(Math.PI/180);
+        double angle = start;
 //        System.out.println(angle);
 
         if(right && angle == 360){
@@ -170,26 +178,30 @@ public class Sampler {
 
         double maxIncrementAngle = (minStepSize/(Math.PI*(roboWidth/2)))*360;
         double margin = maxIncrementAngle*Math.floor(Math.abs(target - angle)/maxIncrementAngle);
-        double offset = Math.abs(target - margin);
+        double offset = Math.abs(Math.abs(target - angle) - margin);
+
+        System.out.println("da: " + maxIncrementAngle + " offset: " + offset);
 
         if(angle < target){
-            while(angle < (margin - offset)){
+            while(angle < (target - offset)){
                 angle += maxIncrementAngle;
-//                System.out.println(angle);
+                System.out.println(angle);
                 path.add(new State(new RobotConfig(robo.getPos(), angle*(Math.PI/180)), state.getMovingBoxes(), state.getMovingObstacles()));
             }
 
             angle += offset;
-//            System.out.println(Math.floor(angle)*(Math.PI/180));
+            System.out.println(Math.floor(angle)*(Math.PI/180));
             path.add(new State(new RobotConfig(robo.getPos(), Math.floor(angle)*(Math.PI/180)), state.getMovingBoxes(), state.getMovingObstacles()));
         }
         else if(angle > target){
-            while(angle > (margin + offset)){
+            while(getReducedDouble(angle, 8) > getReducedDouble((target + offset), 8)){
                 angle -= maxIncrementAngle;
+                System.out.println(getReducedDouble(angle, 8));
                 path.add(new State(new RobotConfig(robo.getPos(), angle*(Math.PI/180)), state.getMovingBoxes(), state.getMovingObstacles()));
             }
 
             angle -= offset;
+            System.out.println(Math.floor(angle)*(Math.PI/180));
             path.add(new State(new RobotConfig(robo.getPos(), Math.floor(angle)*(Math.PI/180)), state.getMovingBoxes(), state.getMovingObstacles()));
         }
 
@@ -248,9 +260,9 @@ public class Sampler {
             }else if(nc.getX() < center.getX()){  //left so right
                 System.out.println("move to the left");
                 path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
-                path.addAll(rotateBot(180, path.get(path.size() - 1), true));
+                path.addAll(rotateBot(0, path.get(path.size() - 1), true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth(), 1, false));
-                path.addAll(rotateBot(270, path.get(path.size() - 1), true));
+                path.addAll(rotateBot(270, path.get(path.size() - 1), false));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
                 System.out.println("path to rotate: " + path.size());
             }
@@ -386,8 +398,10 @@ public class Sampler {
             update.set(update.indexOf(mb), arrived);
         }
 
-        State step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, focusBox, movingObstacles, robo);
+        State step = createNewState(new State(robo, movingBoxes, movingObstacles), focusBox, focusBox, movingObstacles, robo, false);
         path.add(step);
+
+        State pastState;
 
         for(MovingBox mbog : movingBoxes){ //hard limit placed
             focusBox = mbog;
@@ -429,10 +443,11 @@ public class Sampler {
                     MovingBox last = init;
                     MovingBox sStep = buildStep(init, next).get(1);
 //                    for(MovingBox sStep : buildStep(init, next)){
-                        State pastState = path.get(path.size() - 1);
+                        pastState = path.get(path.size() - 1);
                         path.addAll(refaceRobot(last, sStep, pastState));
 
-                        step = createNewState(intoNewBox, focusBox, sStep, newMoPos, pastState.getRobo());
+                        pastState = path.get(path.size() - 1);
+                        step = createNewState(intoNewBox, focusBox, sStep, newMoPos, pastState.getRobo(), true);
                         path.add(step);
 
                         last = sStep;
@@ -793,7 +808,7 @@ public class Sampler {
         List<State> path = new ArrayList<>();
         List<RobotConfig> markers = new ArrayList<>();
 
-        path.add(createNewState(state, focusBox, focusBox, state.getMovingObstacles(), origin));
+        path.add(createNewState(state, focusBox, focusBox, state.getMovingObstacles(), origin, false));
         markers.add(origin);
         int count = 0;
 
