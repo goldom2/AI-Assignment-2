@@ -93,6 +93,13 @@ public class Sampler {
         return posRobo;
     }
 
+    /**
+     * Samples a state for the given MovingBox leaving all other boxes where they are
+     *
+     * @param origin
+     * @param mb
+     * @return
+     */
     private State sampleNewState(State origin, MovingBox mb){
         List<MovingBox> newMovingBoxes = new ArrayList<>();
         MovingBox temp;
@@ -100,8 +107,11 @@ public class Sampler {
         for(MovingBox box : origin.getMovingBoxes()){
 
             if(box.equals(mb)){
-                temp = new MovingBox(
-                        new Point2D.Double(Math.random(), Math.random()), box.getWidth());
+                do {
+                    temp = new MovingBox(
+                            new Point2D.Double(Math.random(), Math.random()), box.getEndPos(), box.getWidth());
+                } while (staticCollision(temp));
+
                 newMovingBoxes.add(temp);
                 box.addToNodeList(temp);
             }else{
@@ -115,6 +125,21 @@ public class Sampler {
             return newState;
         }
         return null;
+    }
+
+    /**
+     * Returns true if the given box collides with any static obstacles
+     *
+     * @param box
+     * @return
+     */
+    public boolean staticCollision(Box box) {
+        for (StaticObstacle so : staticObstacles) {
+            if (box.getRect().intersects(so.getRect())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -545,32 +570,23 @@ public class Sampler {
     public Set<MovingBox> getNeighbourNodes(MovingBox mb){
 
         Set<MovingBox> neighbourNodes = new HashSet<>();
-        boolean correct = true;
+
 
         for(MovingBox node : focusBox.getNodeList()){
             double dx = Math.abs(node.getPos().getX() - mb.getPos().getX());
             double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
 
-            if(dx < 0.1 && dy < 0.1){
+            if(dx < 0.1 && dy < 0.1 && !node.getPos().equals(mb.getPos())){
 
                 double ddx = Math.abs(node.getPos().getX() - focusBox.getEndPos().getX());
                 double ddy = Math.abs(node.getPos().getY() - focusBox.getEndPos().getY());
 
                 node.setDistanceToGoal(Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2)));
 
-                for(StaticObstacle so : staticObstacles){
-                    if(node.getRect().intersects(so.getRect())){
-                        correct = false;
-                    }
-                }
-
-                if(correct){
-                    neighbourNodes.add(node);
-                    correct = true;
-                }
+                neighbourNodes.add(node);
             }
         }
-
+        System.out.println("Number of neighbours: " + neighbourNodes.size() + " Number of nodes: " + focusBox.getNodeList().size());
         return neighbourNodes;
     }
 
@@ -579,35 +595,34 @@ public class Sampler {
 
         MovingBox goal = new MovingBox(mb.getEndPos(), mb.getWidth());
         Set<Node> queue = new HashSet<>();
-        Set<MovingBox> observed = new HashSet<>();
-
-        Node current = new Node(mb, 0, null); //how can you minimise if the initial weight is zero
+        Set<Point2D> visited = new HashSet<>();
+        Node current = new Node(mb, 0.0, heuristic(mb, goal), null); //how can you minimise if the initial weight is zero
         queue.add(current);
 
-        int count = 0;
-        while (!queue.isEmpty() && count < 1000) {
+        while (!queue.isEmpty()) {
             current = getMinimumNode(queue);
-            System.out.println("count: " + count + "  size: " + queue.size() + " cur best pos: " +
-                    current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY());
-//            System.out.println("cur weight: " + current.weight);
-            observed.add(current.getBox());
-            queue.remove(current);
+            System.out.println("size: " + queue.size() + " cur pos: "
+                    + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
+                    + " cur weight: " + current.getWeight()
+                    + " heuristic: " + current.getHeuristic()
+                    + " sum: " + (current.getWeight() + current.getHeuristic()));
 
+            queue.remove(current);
+            visited.add(current.getBox().getPos());
             if (current.getBox().equals(goal)) {
                 break;
             }
             for (MovingBox box : getNeighbourNodes(current.getBox())) {
 //                System.out.println("-->> " + box.getPos().getX() + ", " + box.getPos().getY());
-                double weight = Math.abs(current.getBox().getPos().getX() - box.getPos().getX())
-                        + Math.abs(current.getBox().getPos().getY() - box.getPos().getY())
-                        + heuristic(box, goal);
-//                double weight = heuristic(box, goal);
-                if(!observed.contains(box)){
-                    queue.add(new Node(box, weight, current));
+                if (visited.contains(box.getPos())) {
+                    continue;
                 }
+                double weight = current.getWeight() +
+                        + Math.abs(current.getBox().getPos().getX() - box.getPos().getX())
+                        + Math.abs(current.getBox().getPos().getY() - box.getPos().getY());
+//                double weight = heuristic(box, goal);
+                queue.add(new Node(box, weight, heuristic(box, goal), current));
             }
-
-            count++;
         }
 
 //        for(MovingBox obsv : observed){
@@ -636,9 +651,14 @@ public class Sampler {
         Node result = null;
         double minWeight = 0;
         for (Node node : queue) {
-            if (result == null || node.getWeight() < minWeight) {
+            // Excluding the heuristic makes it perform like BFS
+//            if (result == null || node.getWeight() < minWeight) {
+//                result = node;
+//                minWeight = node.getWeight();
+//            }
+            if (result == null || (node.getWeight() + node.getHeuristic()) < minWeight) {
                 result = node;
-                minWeight = node.getWeight();
+                minWeight = node.getWeight() + node.getHeuristic();
             }
         }
         return result;

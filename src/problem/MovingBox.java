@@ -70,6 +70,9 @@ public class MovingBox extends Box {
 	public Point2D getEndPos(){
     	return endPos;
 	}
+    public void setEndPos(Point2D endPos){
+        this.endPos = endPos;
+    }
 
 	public Point2D getDockPos() { return dockPos; }
 
@@ -79,14 +82,9 @@ public class MovingBox extends Box {
     public boolean equals(Object o) {
 	    if (o instanceof MovingBox) {
 	        MovingBox other = (MovingBox) o;
-	        if (this.getEndPos() == null || other.getEndPos() == null) {
-	            return super.equals(other)
-                        && this.getEndPos() == null
-                        && other.getEndPos() == null;
-            } else {
-                return super.equals(other)
-                        && this.getEndPos().equals(other.getEndPos());
-            }
+            return super.equals(other)
+                    && (this.getEndPos() == null
+                    ? other.getEndPos() == null : this.getEndPos().equals(other.getEndPos()));
         }
         return false;
     }
