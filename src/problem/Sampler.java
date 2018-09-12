@@ -39,6 +39,7 @@ public class Sampler {
         this.movingObstacles = movingObstacles;
     }
 
+
     /**
      * temp visualisation method
      *
