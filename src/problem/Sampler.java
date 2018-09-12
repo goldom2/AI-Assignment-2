@@ -95,31 +95,74 @@ public class Sampler {
      * Samples a state for the given MovingBox leaving all other boxes where they are
      *
      * @param origin
-     * @param mb
+     * @param box
      * @return
      */
-    private void sampleNewState(State origin, MovingBox mb){
-        List<MovingBox> newMovingBoxes = new ArrayList<>();
+    private void sampleNewState(State origin, MovingBox box){
         MovingBox temp;
-
-        for(MovingBox box : origin.getMovingBoxes()){
-
-            if(box.equals(mb)){
-                do {
-                    temp = new MovingBox(
-                            new Point2D.Double(Math.random(), Math.random()), box.getEndPos(), box.getWidth());
-                } while (staticCollision(temp.getRect()));
-
-                newMovingBoxes.add(temp);
+        // Randomise samples around the board
+        for (int i = 0; i < 1000; i++) {
+            do {
+                temp = new MovingBox(
+                        new Point2D.Double(Math.random(), Math.random()), box.getEndPos(), box.getWidth());
+            } while (staticCollision(temp.getRect()));
+            box.addToNodeList(temp);
+        }
+        // Add samples on static obstacle corners
+        for (StaticObstacle staticObstacle : staticObstacles) {
+            // Bottom left
+            temp = new MovingBox(
+                    new Point2D.Double(staticObstacle.getRect().getMinX() - box.getWidth(), staticObstacle.getRect().getMinY() - box.getWidth()),
+                    box.getEndPos(), box.getWidth());
+            if (!staticCollision(temp.getRect())) {
                 box.addToNodeList(temp);
-            }else{
-                newMovingBoxes.add(box);
+            }
+            // Bottom right
+            temp = new MovingBox(
+                    new Point2D.Double(staticObstacle.getRect().getMaxX(), staticObstacle.getRect().getMinY() - box.getWidth()),
+                    box.getEndPos(), box.getWidth());
+            if (!staticCollision(temp.getRect())) {
+                box.addToNodeList(temp);
+            }
+            // Top left
+            temp = new MovingBox(
+                    new Point2D.Double(staticObstacle.getRect().getMinX() - box.getWidth(), staticObstacle.getRect().getMaxY()),
+                    box.getEndPos(), box.getWidth());
+            if (!staticCollision(temp.getRect())) {
+                box.addToNodeList(temp);
+            }
+            // Top right
+            temp = new MovingBox(
+                    new Point2D.Double(staticObstacle.getRect().getMaxX(), staticObstacle.getRect().getMinY()),
+                    box.getEndPos(), box.getWidth());
+            if (!staticCollision(temp.getRect())) {
+                box.addToNodeList(temp);
             }
         }
+        // Add goal to samples
+        temp = new MovingBox(box.getEndPos(), box.getEndPos(), box.getWidth());
+        box.addToNodeList(temp);
+//        List<MovingBox> newMovingBoxes = new ArrayList<>();
+//        MovingBox temp;
+//
+//        for(MovingBox box : origin.getMovingBoxes()){
+//
+//            if(box.equals(mb)){
+//                do {
+//                    temp = new MovingBox(
+//                            new Point2D.Double(Math.random(), Math.random()), box.getEndPos(), box.getWidth());
+//                } while (staticCollision(temp.getRect()));
+//
+//                newMovingBoxes.add(temp);
+//                box.addToNodeList(temp);
+//            }else{
+//                newMovingBoxes.add(box);
+//            }
+//        }
     }
 
     /**
-     * Returns true if the given Rectangle collides with any static obstacles
+     * Returns true if the given Rectangle collides with any static obstacles or the edge of the board
      *
      * @param box
      * @return
@@ -129,6 +172,10 @@ public class Sampler {
             if (box.intersects(so.getRect())) {
                 return true;
             }
+        }
+        Rectangle2D board = new Rectangle2D.Double(0, 0, 1, 1);
+        if (!board.contains(box)) {
+            return true;
         }
         return false;
     }
@@ -703,11 +750,11 @@ public class Sampler {
 
             posRoboConfig.add(new RobotConfig(robDockPos, robo.getOrientation()));
 
-            for(int i = 0; i < 1000; i++){
+//            for(int i = 0; i < 1000; i++){
                 sampleNewState(og, mb);
-            }
+//            }
 
-            mb.addToNodeList(new MovingBox(mb.getEndPos(), mb.getEndPos(), mb.getWidth()));
+//            mb.addToNodeList(new MovingBox(mb.getEndPos(), mb.getEndPos(), mb.getWidth()));
         }
 
         State step = og;    //the last step
