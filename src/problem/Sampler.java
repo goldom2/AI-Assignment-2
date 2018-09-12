@@ -108,7 +108,7 @@ public class Sampler {
                 do {
                     temp = new MovingBox(
                             new Point2D.Double(Math.random(), Math.random()), box.getEndPos(), box.getWidth());
-                } while (staticCollision(temp));
+                } while (staticCollision(temp.getRect()));
 
                 newMovingBoxes.add(temp);
                 box.addToNodeList(temp);
@@ -119,14 +119,14 @@ public class Sampler {
     }
 
     /**
-     * Returns true if the given box collides with any static obstacles
+     * Returns true if the given Rectangle collides with any static obstacles
      *
      * @param box
      * @return
      */
-    public boolean staticCollision(Box box) {
+    public boolean staticCollision(Rectangle2D box) {
         for (StaticObstacle so : staticObstacles) {
-            if (box.getRect().intersects(so.getRect())) {
+            if (box.intersects(so.getRect())) {
                 return true;
             }
         }
@@ -446,39 +446,49 @@ public class Sampler {
 //            MovingBox next = boxPath.get(1);
             for (MovingBox next : boxPath) {
 
-                if(next != null) {
-//                    System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
+//              System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
 
-                    // check path between origin and end (Rec around the origin and end points)
-                    Point2D mapOrigin = new Point2D.Double(min(init.getRect().getMinX(), next.getRect().getMinX()),
-                            min(init.getRect().getMinY(), next.getRect().getMinY()));
+                // check path between origin and end (Rec around the origin and end points)
+                Point2D mapOrigin = new Point2D.Double(min(init.getRect().getMinX(), next.getRect().getMinX()),
+                        min(init.getRect().getMinY(), next.getRect().getMinY()));
 
-                    double width = Math.abs(mapOrigin.getX() - max(init.getRect().getMaxX(), next.getRect().getMaxX()));
-                    double height = Math.abs(mapOrigin.getY() - max(init.getRect().getMaxY(), next.getRect().getMaxY()));
+                double width = Math.abs(mapOrigin.getX() - max(init.getRect().getMaxX(), next.getRect().getMaxX()));
+                double height = Math.abs(mapOrigin.getY() - max(init.getRect().getMaxY(), next.getRect().getMaxY()));
 
-                    Rectangle2D pathSpace = new Rectangle2D.Double(
-                            mapOrigin.getX(), mapOrigin.getY(), width, height);
+                Rectangle2D pathSpace = new Rectangle2D.Double(
+                        mapOrigin.getX(), mapOrigin.getY(), width, height);
 
-                    List<MovingObstacle> newMoPos = moveMovingObstacles(pathSpace, step);
+                List<MovingObstacle> newMoPos = moveMovingObstacles(pathSpace, step);
 
-                    MovingBox last = init;
+                MovingBox last = init;
+                MovingBox intermediate = joinNodes(init, next);
 //                    MovingBox sStep = buildStep(init, next).get(1);
-                    for(MovingBox sStep : buildStep(init, next)){
-                        og = path.get(path.size() - 1);
-                        path.addAll(refaceRobot(last, sStep, og));
 
-                        og = path.get(path.size() - 1);
-                        step = createNewState(intoNewBox, mbog, sStep, last, newMoPos, og.getRobo(), true);
-                        path.add(step);
+                // Path to intermediate node
+                for(MovingBox sStep : buildStep(init, intermediate)){
+                    og = path.get(path.size() - 1);
+                    path.addAll(refaceRobot(last, sStep, og));
 
-                        last = sStep;
-                    }
-                    init = next;
-                }else{
-                    System.out.println("next == null");
+                    og = path.get(path.size() - 1);
+                    step = createNewState(intoNewBox, mbog, sStep, last, newMoPos, og.getRobo(), true);
+                    path.add(step);
+
+                    last = sStep;
                 }
+                // Path from intermediate node to next node
+                for(MovingBox sStep : buildStep(intermediate, next)){
+                    og = path.get(path.size() - 1);
+                    path.addAll(refaceRobot(last, sStep, og));
 
-//                count++;
+                    og = path.get(path.size() - 1);
+                    step = createNewState(intoNewBox, mbog, sStep, last, newMoPos, og.getRobo(), true);
+                    path.add(step);
+
+                    last = sStep;
+                }
+                init = next;
+
+//              count++;
             }
         }
 
@@ -494,17 +504,43 @@ public class Sampler {
             double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
 
             if(dx < 0.1 && dy < 0.1 && !node.getPos().equals(mb.getPos())){
-
-                double ddx = Math.abs(node.getPos().getX() - focus.getEndPos().getX());
-                double ddy = Math.abs(node.getPos().getY() - focus.getEndPos().getY());
-
-                node.setDistanceToGoal(Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2)));
-
-                neighbourNodes.add(node);
+//                neighbourNodes.add(node);
+//                node.setEndPos(focus.getEndPos());
+                if (joinNodes(mb, node) != null) {
+                    neighbourNodes.add(node);
+                }
             }
         }
 //        System.out.println("Number of neighbours: " + neighbourNodes.size() + " Number of nodes: " + focusBox.getNodeList().size());
         return neighbourNodes;
+    }
+
+    /**
+     * Finds an intermediate position that link two goals without intersections
+     *
+     * @param start
+     * @param goal
+     * @return
+     */
+    private MovingBox joinNodes(MovingBox start, MovingBox goal) {
+        // Path 1
+        Rectangle2D intermediatePos = new Rectangle2D.Double(start.getPos().getX(),
+                goal.getPos().getY(), start.getWidth(), start.getWidth());
+        if (!staticCollision(start.getRect().createUnion(intermediatePos))
+                && !staticCollision(goal.getRect().createUnion(intermediatePos))) {
+            return new MovingBox(
+                    new Point2D.Double(intermediatePos.getMinX(), intermediatePos.getMinY()), start.getWidth());
+        }
+        // Path 2
+        intermediatePos = new Rectangle2D.Double(goal.getPos().getX(),
+                start.getPos().getY(), start.getWidth(), start.getWidth());
+        if (!staticCollision(start.getRect().createUnion(intermediatePos))
+                && !staticCollision(goal.getRect().createUnion(intermediatePos))) {
+            return new MovingBox(
+                    new Point2D.Double(intermediatePos.getMinX(), intermediatePos.getMinY()), start.getWidth());
+        }
+
+        return null;
     }
 
     public List<MovingBox> findBoxPath(MovingBox mb) {
@@ -518,11 +554,11 @@ public class Sampler {
 
         while (!queue.isEmpty()) {
             current = getMinimumNode(queue);
-//            System.out.println("size: " + queue.size() + " cur pos: "
-//                    + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
-//                    + " cur weight: " + current.getWeight()
-//                    + " heuristic: " + current.getHeuristic()
-//                    + " sum: " + (current.getWeight() + current.getHeuristic()));
+            System.out.println("size: " + queue.size() + " cur pos: "
+                    + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
+                    + " cur weight: " + current.getWeight()
+                    + " heuristic: " + current.getHeuristic()
+                    + " sum: " + (current.getWeight() + current.getHeuristic()));
 
             queue.remove(current);
             visited.add(current.getBox().getPos());
@@ -558,9 +594,9 @@ public class Sampler {
             current = current.getPrev();
         }
 
-//        System.out.println("final: " + boxPath.get(boxPath.size() - 1).getPos().getX()
-//                + ", " + boxPath.get(boxPath.size() - 1).getPos().getY());
-//        System.out.println("goal: " + goal.getPos().getX() + ", " + goal.getPos().getY());
+        System.out.println("final: " + boxPath.get(boxPath.size() - 1).getPos().getX()
+                + ", " + boxPath.get(boxPath.size() - 1).getPos().getY());
+        System.out.println("goal: " + goal.getPos().getX() + ", " + goal.getPos().getY());
         return boxPath;
     }
 
@@ -667,11 +703,21 @@ public class Sampler {
         double curX = getReducedDouble(origin.getPos().getX(), 3);
         double curY = getReducedDouble(origin.getPos().getY(), 3);
 
+//        double goalX = end.getPos().getX();
+//        double goalY = end.getPos().getY();
+//
+//        double curX = origin.getPos().getX();
+//        double curY = origin.getPos().getY();
+
+
         while(curX != goalX || curY != goalY){
             MovingBox last = path.get((path.size() - 1));
 
             double lastX = getReducedDouble(last.getPos().getX(), 3);
             double lastY = getReducedDouble(last.getPos().getY(), 3);
+
+//            double lastX = last.getPos().getX();
+//            double lastY = last.getPos().getY();
 
             // correct X position
             if (lastX < goalX) { //move right

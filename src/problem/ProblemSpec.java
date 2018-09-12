@@ -131,6 +131,8 @@ public class ProblemSpec {
 				double Yo = s.nextDouble();
 				double Xe = s.nextDouble();
 				double Ye = s.nextDouble();
+				System.out.println("Start point is: " + (Xo-robotWidth/2) + ", " + (Yo-robotWidth/2));
+				System.out.println("Goal point is: " + (Xe-robotWidth/2) + ", " + (Ye-robotWidth/2));
 
 				movingBoxes.add(new MovingBox(
 					new Point2D.Double(Xo-robotWidth/2,
