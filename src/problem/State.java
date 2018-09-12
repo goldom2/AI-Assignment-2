@@ -139,6 +139,12 @@ public class State {
         return false;
     }
 
+    @Override
+    public int hashCode() {
+        // TODO
+        return super.hashCode();
+    }
+
     /**
      * return
      *
