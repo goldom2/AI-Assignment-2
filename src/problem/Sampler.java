@@ -341,6 +341,60 @@ public class Sampler {
 
     }
 
+    public List<State> sideRotate(State state, int face1, int face2, MovingBox prev){
+        List<State> path = new ArrayList<>();
+
+        if(face1 == 1){ //Top
+            if(face2 == 2){ // Right
+                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
+                path.addAll(rotateBot(270, path.get(path.size() - 1), true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
+            }
+            else { //Left
+                path.addAll(refaceRobotTransition(state, prev.getWidth() / 2, -1, false));
+                path.addAll(rotateBot(90, path.get(path.size() - 1), true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth() / 2, -1, true));
+            }
+        }
+        else if(face1 == 2){ // Right
+            if(face2 == 1){ // Top
+                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
+                path.addAll(rotateBot(180, path.get(path.size() - 1), false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, false));
+            }
+            else{ // Bottom
+                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
+                path.addAll(rotateBot(0, path.get(path.size() - 1), false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, false));
+            }
+        }
+        else if(face1 == 3){ // Bottom
+            if(face2 == 2){ // Right
+                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
+                path.addAll(rotateBot(270, path.get(path.size() - 1), false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, true));
+            }
+            else{ // Left
+                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
+                path.addAll(rotateBot(90, path.get(path.size() - 1), false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, true));
+            }
+        }
+        else if(face1 == 4){ // Left
+            if(face2 == 3){ //Bottom
+                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
+                path.addAll(rotateBot(180, path.get(path.size() - 1), false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, false));
+            }
+            else{ // Top
+                path.addAll(refaceRobotTransition(state, prev.getWidth() / 2, 1, true));
+                path.addAll(rotateBot(0, path.get(path.size() - 1), true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth() / 2, 1, false));
+            }
+        }
+        return path;
+    }
+
     public List<State> refaceRobot(MovingBox prev, MovingBox next, State state){
         List<State> path = new ArrayList<>();
         RobotConfig cur = state.getRobo();
@@ -358,79 +412,218 @@ public class Sampler {
         if(cur.getPos().getX() < center.getX()){    //left
 //            System.out.println("bot left of center");
             if(nc.getY() > center.getY()){    //next pos is above prev pos so move bot on below
-
-
-
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
-//                path.addAll(rotateBot(180, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, false));
-
+                if(checkRotation(state, 4, 3)){ // check edge rotation
+                    path.addAll(sideRotate(state, 4, 3, prev));
+                }
+                //elses with daniels
             }else if(nc.getY() < center.getY()) {  //down so above
-//                path.addAll(refaceRobotTransition(state, prev.getWidth() / 2, 1, true));
-//                path.addAll(rotateBot(0, path.get(path.size() - 1), true));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth() / 2, 1, false));
-
+                if(checkRotation(state, 4, 1)){ // check edge rotation
+                    path.addAll(sideRotate(state, 4, 1, prev));
+                }
+                //elses with daniels
             }else if(nc.getX() < center.getX()){  //left so right
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
-//                path.addAll(rotateBot(0, path.get(path.size() - 1), true));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth(), 1, false));
-//                path.addAll(rotateBot(270, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
+                if(checkRotation(state, 4, 1)){
+                    if(checkRotation(state, 1, 2)){
+                        path.addAll(sideRotate(state, 4, 1, prev));
+                        path.addAll(sideRotate(state, 1, 2, prev));
+                    }
+                    // elses with daniels code
+                }
+                //check direction with daniels code
+                else if(checkRotation(state, 4, 3)){
+                    if(checkRotation(state, 3, 2)){
+                        path.addAll(sideRotate(state, 4, 3, prev));
+                        path.addAll(sideRotate(state, 3, 2, prev));
+                    }
+                    // elses with daniels code
+                }
             }
 
         }else if(cur.getPos().getX() > center.getX()){  //right
             if(nc.getY() > center.getY()){  //above so below
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
-//                path.addAll(rotateBot(180, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, false));
+                if(checkRotation(state, 2, 3)){ // check edge rotation
+                    path.addAll(sideRotate(state, 2, 3, prev));
+                }
+                //elses with daniels
             }else if(nc.getY() < center.getY()){  //above so below
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
-//                path.addAll(rotateBot(360, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, false));
+                if(checkRotation(state, 2, 1)){ // check edge rotation
+                    path.addAll(sideRotate(state, 2, 1, prev));
+                }
+                //elses with daniels
             }else if(nc.getX() > center.getX()){  //above so below
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
-//                path.addAll(rotateBot(0, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth(), -1, false));
-//                path.addAll(rotateBot(90, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
+                if(checkRotation(state, 2, 1)){
+                    if(checkRotation(state, 1, 4)){
+                        path.addAll(sideRotate(state, 2, 1, prev));
+                        path.addAll(sideRotate(state, 1, 4, prev));
+                    }
+                    // elses with daniels code
+                }
+                //check direction with daniels code
+                else if(checkRotation(state, 2, 3)){
+                    if(checkRotation(state, 3, 4)){
+                        path.addAll(sideRotate(state, 2, 3, prev));
+                        path.addAll(sideRotate(state, 3, 4, prev));
+                    }
+                    // elses with daniels code
+                }
             }
 
         }else if(cur.getPos().getY() < center.getY()){  //down
             if(nc.getX() < center.getX()){  //left so right
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
-//                path.addAll(rotateBot(270, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, true));
+                if(checkRotation(state, 3, 2)){ // check edge rotation
+                    path.addAll(sideRotate(state, 3, 2, prev));
+                }
+                //elses with daniels
             }else if(nc.getX() > center.getX()){  //right so left
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
-//                path.addAll(rotateBot(90, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, true));
+                if(checkRotation(state, 3, 4)){ // check edge rotation
+                    path.addAll(sideRotate(state, 3, 4, prev));
+                }
+                //elses with daniels
             }else if(nc.getY() < center.getY()){  //below so above
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
-//                path.addAll(rotateBot(90, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth(), -1, true));
-//                path.addAll(rotateBot(0, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, false));
+                if(checkRotation(state, 3, 2)){
+                    if(checkRotation(state, 2, 1)){
+                        path.addAll(sideRotate(state, 3, 2, prev));
+                        path.addAll(sideRotate(state, 2, 1, prev));
+                    }
+                    // elses with daniels code
+                }
+                //check direction with daniels code
+                else if(checkRotation(state, 3, 4)){
+                    if(checkRotation(state, 4, 1)){
+                        path.addAll(sideRotate(state, 3, 4, prev));
+                        path.addAll(sideRotate(state, 4, 1, prev));
+                    }
+                    // elses with daniels code
+                }
             }
 
         }else if(cur.getPos().getY() > center.getY()){  //up
             if(nc.getX() < center.getX()){  //left so right
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
-//                path.addAll(rotateBot(270, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
+                if(checkRotation(state, 1, 2)){ // check edge rotation
+                    path.addAll(sideRotate(state, 1, 2, prev));
+                }
+                //elses with daniels
             }else if(nc.getX() > center.getX()){  //right so left
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
-//                path.addAll(rotateBot(90, path.get(path.size() - 1), true));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
+                if(checkRotation(state, 1, 4)){ // check edge rotation
+                    path.addAll(sideRotate(state, 1, 4, prev));
+                }
+                //elses with daniels
             }else if(nc.getY() > center.getY()){  //above so below
-//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
-//                path.addAll(rotateBot(90, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth(), -1, true));
-//                path.addAll(rotateBot(180, path.get(path.size() - 1), false));
-//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, false));
+                if(checkRotation(state, 1, 2)){
+                    if(checkRotation(state, 2, 3)){
+                        path.addAll(sideRotate(state, 1, 2, prev));
+                        path.addAll(sideRotate(state, 2, 3, prev));
+                    }
+                    // elses with daniels code
+                }
+                //check direction with daniels code
+                else if(checkRotation(state, 1, 4)){
+                    if(checkRotation(state, 4, 3)){
+                        path.addAll(sideRotate(state, 1, 4, prev));
+                        path.addAll(sideRotate(state, 4, 3, prev));
+                    }
+                    // elses with daniels code
+                }
             }
         }
 
         return path;
+    }
+
+    public boolean checkRect(State state, Rectangle2D rect){
+        List<MovingBox> movingboxes = state.getMovingBoxes();
+        List<MovingObstacle> movingObstacles = state.getMovingObstacles();
+
+        if(staticCollision(rect)){
+            return false;
+        }
+
+        for(MovingBox box : movingboxes){
+            if(box.getRect().intersects(rect)){
+                return false;
+            }
+        }
+
+        for(MovingObstacle box : movingObstacles){
+            if(box.getRect().intersects(rect)){
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+    public boolean checkRotation(State state, int face1, int face2){
+        // 1 Top, 2 Right, 3 Bottom, 4 Left
+        double width = this.roboWidth;
+        double halfWidth = width / 2;
+        RobotConfig cur = state.getRobo();
+        double y;
+        double x;
+
+        //Top
+        //Top left
+        if((face1 == 1 && face2 == 4) ||(face2 == 1 && face1 == 4) ){
+            y = cur.getPos().getY();
+            x = cur.getPos().getX() - halfWidth;
+            Rectangle2D rect = new Rectangle2D.Double(x, y, halfWidth, halfWidth);
+            if(!checkRect(state, rect)){
+                return false;
+            }
+            y = y - halfWidth;
+            x = x - halfWidth;
+            rect.setRect(x, y, halfWidth, halfWidth);
+            if(!checkRect(state, rect)){
+                return false;
+            }
+        }
+        //Top right
+        else if((face1 == 1 && face2 == 2)||(face2 == 1 && face1 == 2)){
+            y = cur.getPos().getY();
+            x = cur.getPos().getX();
+            Rectangle2D rect = new Rectangle2D.Double(x, y, halfWidth, halfWidth);
+            if(!checkRect(state, rect)){
+                return false;
+            }
+            y = y - halfWidth;
+            x = x + halfWidth;
+            rect.setRect(x, y, halfWidth, halfWidth);
+            if(!checkRect(state, rect)){
+                return false;
+            }
+        }
+        //Bottom
+        //Bottom left
+        else if((face1 == 3 && face2 == 4)||(face2 == 3 && face1 ==4 )){
+            y = cur.getPos().getY() - halfWidth;
+            x = cur.getPos().getX() - halfWidth;
+            Rectangle2D rect = new Rectangle2D.Double(x, y, halfWidth, halfWidth);
+            if(!checkRect(state, rect)){
+                return false;
+            }
+            y = y + halfWidth;
+            x = x - halfWidth;
+            rect.setRect(x, y, halfWidth, halfWidth);
+            if(!checkRect(state, rect)){
+                return false;
+            }
+        }
+        //Bottom right
+        else if((face1 == 3 && face2 == 2)||(face2 == 3 && face1 == 2)){
+            y = cur.getPos().getY() - halfWidth;
+            x = cur.getPos().getX();
+            Rectangle2D rect = new Rectangle2D.Double(x, y, halfWidth, halfWidth);
+            if(!checkRect(state, rect)){
+                return false;
+            }
+            y = y + halfWidth;
+            x = x + halfWidth;
+            rect.setRect(x, y, halfWidth, halfWidth);
+            if(!checkRect(state, rect)){
+                return false;
+            }
+        }
+        return true;
     }
 
     public List<State> orientRobot(MovingBox mb, State state){
