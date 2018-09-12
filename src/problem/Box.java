@@ -91,4 +91,9 @@ public abstract class Box {
         }
 	    return false;
     }
+
+	@Override
+	public int hashCode() {
+		return rect.hashCode();
+	}
 }

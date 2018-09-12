@@ -908,14 +908,10 @@ public class Sampler {
     }
 
     private double min(double v1, double v2){
-        if(v1 < v2) return v1;
-
-        return v2;
+        return (v1 < v2) ? v1 : v2;
     }
 
     private double max(double v1, double v2){
-        if(v1 > v2) return v1;
-
-        return v2;
+        return (v1 > v2) ? v1 : v2;
     }
 }
