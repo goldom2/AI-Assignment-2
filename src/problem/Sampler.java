@@ -886,7 +886,7 @@ public class Sampler {
         Node result = null;
         double minWeight = 0;
         for (Node node : queue) {
-            // Excluding the heuristic makes it perform like BFS
+            // Excluding the heuristic makes it perform like BFS - Maybe not tends to break
 //            if (result == null || node.getWeight() < minWeight) {
 //                result = node;
 //                minWeight = node.getWeight();
@@ -979,44 +979,27 @@ public class Sampler {
         List<MovingBox> path = new ArrayList<>();
         path.add(origin);
 
-        double goalX = getReducedDouble(end.getPos().getX(), 3);
-        double goalY = getReducedDouble(end.getPos().getY(), 3);
+        double goalX = end.getPos().getX();
+        double goalY = end.getPos().getY();
 
-        double curX = getReducedDouble(origin.getPos().getX(), 3);
-        double curY = getReducedDouble(origin.getPos().getY(), 3);
-
-//        double goalX = end.getPos().getX();
-//        double goalY = end.getPos().getY();
-//
-//        double curX = origin.getPos().getX();
-//        double curY = origin.getPos().getY();
-
+        double curX = origin.getPos().getX();
+        double curY = origin.getPos().getY();
 
         while(curX != goalX || curY != goalY){
-            MovingBox last = path.get((path.size() - 1));
 
-            double lastX = getReducedDouble(last.getPos().getX(), 3);
-            double lastY = getReducedDouble(last.getPos().getY(), 3);
-
-//            double lastX = last.getPos().getX();
-//            double lastY = last.getPos().getY();
-
-            // correct X position
-            if (lastX < goalX) { //move right
-                curX = lastX + minStepSize;
-                curY = lastY;
-            } else if (lastX > goalX) { //move left
-                curX = lastX - minStepSize;
-                curY = lastY;
-            }
-
-            // correct Y position
-            else if (lastY < goalY) { //move up
-                curX = lastX;
-                curY = lastY + minStepSize;
-            } else if (lastY > goalY) { //move down
-                curX = lastX;
-                curY = lastY - minStepSize;
+            // Adjust position of x or y up to maximum step size
+            if (curX != goalX) {
+                if (Math.abs(curX - goalX) > minStepSize) {
+                    curX = (curX - goalX > 0) ? curX - minStepSize : curX + minStepSize;
+                } else {
+                    curX = goalX;
+                }
+            } else if (curY != goalY) {
+                if (Math.abs(curY - goalY) > minStepSize) {
+                    curY = (curY - goalY > 0) ? curY - minStepSize : curY + minStepSize;
+                } else {
+                    curY = goalY;
+                }
             }
 
             // need check to see if path intersects with moving object
@@ -1026,7 +1009,7 @@ public class Sampler {
             // given the end and origin move obstacle away from end??? ...that would be origin though???
 
             MovingBox projMB = new MovingBox(
-                    new Point2D.Double(curX, curY), last.getWidth());
+                    new Point2D.Double(curX, curY), roboWidth);
 
             // can check projected, if intersects with obstacle
 
