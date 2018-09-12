@@ -84,6 +84,13 @@ public class Sampler {
         return posRobo;
     }
 
+    /**
+     * Samples a state for the given MovingBox leaving all other boxes where they are
+     *
+     * @param origin
+     * @param mb
+     * @return
+     */
     private State sampleNewState(State origin, MovingBox mb){
         List<MovingBox> newMovingBoxes = new ArrayList<>();
         MovingBox temp;
@@ -91,8 +98,11 @@ public class Sampler {
         for(MovingBox box : origin.getMovingBoxes()){
 
             if(box.equals(mb)){
-                temp = new MovingBox(
-                        new Point2D.Double(Math.random(), Math.random()), box.getWidth());
+                do {
+                    temp = new MovingBox(
+                            new Point2D.Double(Math.random(), Math.random()), box.getEndPos(), box.getWidth());
+                } while (staticCollision(temp));
+
                 newMovingBoxes.add(temp);
                 box.addToNodeList(temp);
             }else{
@@ -106,6 +116,21 @@ public class Sampler {
             return newState;
         }
         return null;
+    }
+
+    /**
+     * Returns true if the given box collides with any static obstacles
+     *
+     * @param box
+     * @return
+     */
+    public boolean staticCollision(Box box) {
+        for (StaticObstacle so : staticObstacles) {
+            if (box.getRect().intersects(so.getRect())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -481,7 +506,7 @@ public class Sampler {
     public Set<MovingBox> getNeighbourNodes(MovingBox mb){
 
         Set<MovingBox> neighbourNodes = new HashSet<>();
-        boolean correct = true;
+
 
         for(MovingBox node : focusBox.getNodeList()){
             double dx = Math.abs(node.getPos().getX() - mb.getPos().getX());
@@ -494,19 +519,10 @@ public class Sampler {
 
                 node.setDistanceToGoal(Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2)));
 
-                for(StaticObstacle so : staticObstacles){
-                    if(node.getRect().intersects(so.getRect())){
-                        correct = false;
-                    }
-                }
-
-                if(correct){
-                    neighbourNodes.add(node);
-                    correct = true;
-                }
+                neighbourNodes.add(node);
             }
         }
-
+        System.out.println("Number of neighbours: " + neighbourNodes.size() + " Number of nodes: " + focusBox.getNodeList().size());
         return neighbourNodes;
     }
 

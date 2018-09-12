@@ -43,4 +43,9 @@ public class Node {
         }
         return false;
     }
+
+    @Override
+    public int hashCode() {
+        return box.getPos().hashCode();
+    }
 }
