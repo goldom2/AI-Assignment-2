@@ -101,7 +101,7 @@ public class Sampler {
     private void sampleNewState(State origin, MovingBox box){
         MovingBox temp;
         // Randomise samples around the board
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             do {
                 temp = new MovingBox(
                         new Point2D.Double(Math.random(), Math.random()), box.getEndPos(), box.getWidth());
@@ -989,7 +989,7 @@ public class Sampler {
             double dx = Math.abs(node.getPos().getX() - mb.getPos().getX());
             double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
 
-            if(dx < 0.3 && dy < 0.3 && !node.getPos().equals(mb.getPos())){
+            if(dx < 1 && dy < 1 && !node.getPos().equals(mb.getPos())){
                 if (joinNodes(mb, node) != null) {
                     neighbourNodes.add(node);
                 }
@@ -1110,11 +1110,7 @@ public class Sampler {
      * @return
      */
     public double heuristic(Box box, Box goal) {
-        if (box instanceof MovingBox && goal instanceof MovingBox) {
-            return distanceToGoal(box, goal);
-        } else {
-            return 0;
-        }
+        return distanceToGoal(box, goal);
     }
 
     /**
