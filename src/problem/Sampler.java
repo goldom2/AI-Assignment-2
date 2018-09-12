@@ -785,9 +785,7 @@ public class Sampler {
             double dx = Math.abs(node.getPos().getX() - mb.getPos().getX());
             double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
 
-            if(dx < 0.1 && dy < 0.1 && !node.getPos().equals(mb.getPos())){
-//                neighbourNodes.add(node);
-//                node.setEndPos(focus.getEndPos());
+            if(dx < 0.3 && dy < 0.3 && !node.getPos().equals(mb.getPos())){
                 if (joinNodes(mb, node) != null) {
                     neighbourNodes.add(node);
                 }
@@ -836,11 +834,11 @@ public class Sampler {
 
         while (!queue.isEmpty()) {
             current = getMinimumNode(queue);
-            System.out.println("size: " + queue.size() + " cur pos: "
+            System.out.println("size: " + queue.size() + "  \tcur pos: "
                     + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
-                    + " cur weight: " + current.getWeight()
-                    + " heuristic: " + current.getHeuristic()
-                    + " sum: " + (current.getWeight() + current.getHeuristic()));
+                    + "  \tcur weight: " + current.getWeight()
+                    + " \theuristic: " + current.getHeuristic()
+                    + " \tsum: " + (current.getWeight() + current.getHeuristic()));
 
             queue.remove(current);
             visited.add(current.getBox().getPos());
