@@ -29,6 +29,7 @@ public class MovingBox extends Box {
 
 	private Set<MovingBox> nodeList = new HashSet<>();
 
+	// Probably best to avoid using this constructor
 	public MovingBox(Point2D pos, double width) {
 		super(pos, width);
 	}

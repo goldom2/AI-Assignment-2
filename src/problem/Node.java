@@ -2,19 +2,19 @@ package problem;
 
 public class Node {
 
-    MovingBox box;
+    Box box;
     double weight;
     double heuristic;
     Node prev;
 
-    public Node(MovingBox box, double weight, double heuristic, Node prev) {
+    public Node(Box box, double weight, double heuristic, Node prev) {
         this.box = box;
         this.weight = weight;
         this.heuristic = heuristic;
         this.prev = prev;
     }
 
-    public MovingBox getBox() {
+    public Box getBox() {
         return box;
     }
 
