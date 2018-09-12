@@ -267,7 +267,7 @@ public class Sampler {
                     prev.getPos().getY()
             ), prev.getWidth());
 
-            if(!staticCollision(proj)){
+            if(!staticCollision(proj.getRect())){
                 path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
                 if(f2 == 2){    //bot
                     path.addAll(rotateBot(180, path.get(path.size() - 1), false));
@@ -286,7 +286,7 @@ public class Sampler {
                     prev.getPos().getY()
             ), prev.getWidth());
 
-            if(!staticCollision(proj)){
+            if(!staticCollision(proj.getRect())){
                 path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
                 if(f2 == 2){    //bot
                     path.addAll(rotateBot(180, path.get(path.size() - 1), true));
@@ -305,7 +305,7 @@ public class Sampler {
                     prev.getPos().getY() - prev.getWidth()
             ), prev.getWidth());
 
-            if(!staticCollision(proj)){
+            if(!staticCollision(proj.getRect())){
                 path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
                 if(f2 == 0){    //left
                     path.addAll(rotateBot(90, path.get(path.size() - 1), false));
@@ -324,7 +324,7 @@ public class Sampler {
                     prev.getPos().getY() + prev.getWidth()
             ), prev.getWidth());
 
-            if(!staticCollision(proj)){
+            if(!staticCollision(proj.getRect())){
                 path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
                 if(f2 == 0){    //left
                     path.addAll(rotateBot(90, path.get(path.size() - 1), false));
