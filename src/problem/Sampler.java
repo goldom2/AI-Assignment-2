@@ -707,7 +707,7 @@ public class Sampler {
                 sampleNewState(og, mb);
             }
 
-            mb.addToNodeList(new MovingBox(mb.getEndPos(), mb.getWidth()));
+            mb.addToNodeList(new MovingBox(mb.getEndPos(), mb.getEndPos(), mb.getWidth()));
         }
 
         State step = og;    //the last step
@@ -723,8 +723,7 @@ public class Sampler {
 
             //orient robot based on position
             path.addAll(orientRobot(mbog, path.get(path.size() - 1)));
-
-            List<MovingBox> boxPath = findBoxPath(mbog);
+            List<MovingBox> boxPath = (List) findBoxPath(mbog, new MovingBox(mbog.getEndPos(), mbog.getEndPos(), mbog.getWidth()), (Set) mbog.getNodeList());
 //            MovingBox next = boxPath.get(1);
             for (MovingBox next : boxPath) {
 
@@ -743,7 +742,7 @@ public class Sampler {
                 List<MovingObstacle> newMoPos = moveMovingObstacles(pathSpace, step);
 
                 MovingBox last = init;
-                MovingBox intermediate = joinNodes(init, next);
+                MovingBox intermediate = (MovingBox) joinNodes(init, next);
 //                    MovingBox sStep = buildStep(init, next).get(1);
 
                 // Path to intermediate node
@@ -777,11 +776,19 @@ public class Sampler {
         printOutput(path);
     }
 
-    public Set<MovingBox> getNeighbourNodes(MovingBox focus, MovingBox mb){
+    /**
+     * Return a set of neighbour nodes to mb from the given set
+     * Neighbours are within a radius and have a path between one another
+     *
+     * @param samples
+     * @param mb
+     * @return
+     */
+    public Set<Box> getNeighbourNodes(Set<Box> samples, Box mb){
 
-        Set<MovingBox> neighbourNodes = new HashSet<>();
+        Set<Box> neighbourNodes = new HashSet<>();
 
-        for(MovingBox node : focus.getNodeList()){
+        for(Box node : samples){
             double dx = Math.abs(node.getPos().getX() - mb.getPos().getX());
             double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
 
@@ -802,7 +809,7 @@ public class Sampler {
      * @param goal
      * @return
      */
-    private MovingBox joinNodes(MovingBox start, MovingBox goal) {
+    private Box joinNodes(Box start, Box goal) {
         // Path 1
         Rectangle2D intermediatePos = new Rectangle2D.Double(start.getPos().getX(),
                 goal.getPos().getY(), start.getWidth(), start.getWidth());
@@ -823,15 +830,22 @@ public class Sampler {
         return null;
     }
 
-    public List<MovingBox> findBoxPath(MovingBox mb) {
-//        System.out.println(mb.getNodeList().size());
-
-        MovingBox goal = new MovingBox(mb.getEndPos(), mb.getWidth());
+    /**
+     * Find shortest path through set of samples to get from the initial position (mb) to the goal
+     *
+     * @param mb
+     * @param goal
+     * @param samples
+     * @return
+     */
+    public List<Box> findBoxPath(Box mb, Box goal, Set<Box> samples) {
+        // Initialise all the queues and sets to run the search
         Set<Node> queue = new HashSet<>();
         Set<Point2D> visited = new HashSet<>();
         Node current = new Node(mb, 0.0, heuristic(mb, goal), null); //how can you minimise if the initial weight is zero
         queue.add(current);
 
+        // Continue search until there is no more options or the goal is reached
         while (!queue.isEmpty()) {
             current = getMinimumNode(queue);
             System.out.println("size: " + queue.size() + "  \tcur pos: "
@@ -845,30 +859,23 @@ public class Sampler {
             if (current.getBox().equals(goal)) {
                 break;
             }
-            for (MovingBox box : getNeighbourNodes(mb, current.getBox())) {
-//                System.out.println("-->> " + box.getPos().getX() + ", " + box.getPos().getY());
+            for (Box box : getNeighbourNodes(samples, current.getBox())) {
                 if (visited.contains(box.getPos())) {
                     continue;
                 }
                 double weight = current.getWeight() +
                         + Math.abs(current.getBox().getPos().getX() - box.getPos().getX())
                         + Math.abs(current.getBox().getPos().getY() - box.getPos().getY());
-//                double weight = heuristic(box, goal);
                 queue.add(new Node(box, weight, heuristic(box, goal), current));
             }
         }
 
-//        for(MovingBox obsv : observed){
-//            System.out.println(obsv.getPos().getX() + ", " +
-//                    obsv.getPos().getY());
-//        }
-
         if (!current.getBox().equals(goal)) {
             System.out.println("Could not find a path to the goal");
-//            return null;
         }
 
-        List<MovingBox> boxPath = new ArrayList<>();
+        // Create the list of boxes
+        List<Box> boxPath = new ArrayList<>();
         while (current != null) {
             boxPath.add(0, current.getBox());
             current = current.getPrev();
@@ -880,15 +887,16 @@ public class Sampler {
         return boxPath;
     }
 
+    /**
+     * Return the Node with the smallest distance from the start node and expected path to goal
+     *
+     * @param queue
+     * @return
+     */
     public Node getMinimumNode(Set<Node> queue) {
         Node result = null;
         double minWeight = 0;
         for (Node node : queue) {
-            // Excluding the heuristic makes it perform like BFS - Maybe not tends to break
-//            if (result == null || node.getWeight() < minWeight) {
-//                result = node;
-//                minWeight = node.getWeight();
-//            }
             if (result == null || (node.getWeight() + node.getHeuristic()) < minWeight) {
                 result = node;
                 minWeight = node.getWeight() + node.getHeuristic();
@@ -897,8 +905,19 @@ public class Sampler {
         return result;
     }
 
-    public double heuristic(MovingBox box, MovingBox goal) {
-        return distanceToGoal(box, goal);
+    /**
+     * Return the value of the heuristic for getting from box to goal
+     *
+     * @param box
+     * @param goal
+     * @return
+     */
+    public double heuristic(Box box, Box goal) {
+        if (box instanceof MovingBox && goal instanceof MovingBox) {
+            return distanceToGoal(box, goal);
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -906,7 +925,7 @@ public class Sampler {
      *
      * @return
      */
-    public double distanceToGoal(MovingBox box, MovingBox goal) {
+    public double distanceToGoal(Box box, Box goal) {
         double result = 0;
         result += Math.abs(box.getPos().getX() - goal.getPos().getX());
         result += Math.abs(box.getPos().getY() - goal.getPos().getY());
