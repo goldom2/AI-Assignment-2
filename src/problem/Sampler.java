@@ -39,7 +39,6 @@ public class Sampler {
         this.movingObstacles = movingObstacles;
     }
 
-
     /**
      * temp visualisation method
      *
@@ -109,7 +108,7 @@ public class Sampler {
                 do {
                     temp = new MovingBox(
                             new Point2D.Double(Math.random(), Math.random()), box.getEndPos(), box.getWidth());
-                } while (staticCollision(temp));
+                } while (staticCollision(temp.getRect()));
 
                 newMovingBoxes.add(temp);
                 box.addToNodeList(temp);
@@ -120,14 +119,14 @@ public class Sampler {
     }
 
     /**
-     * Returns true if the given box collides with any static obstacles
+     * Returns true if the given Rectangle collides with any static obstacles
      *
      * @param box
      * @return
      */
-    public boolean staticCollision(Box box) {
+    public boolean staticCollision(Rectangle2D box) {
         for (StaticObstacle so : staticObstacles) {
-            if (box.getRect().intersects(so.getRect())) {
+            if (box.intersects(so.getRect())) {
                 return true;
             }
         }
@@ -257,58 +256,89 @@ public class Sampler {
         return path;
     }
 
-    public List<State> sideRotate(State state, int face1, int face2, MovingBox prev){
+    //0=left, 1=right, 2=bot, 3=top,
+    public void findRoboFace(int f1, int f2, MovingBox prev, State state){
         List<State> path = new ArrayList<>();
+        MovingBox proj;
 
-        if(face1 == 1){ //Top
-            if(face2 == 2){ // Right
-                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
-                path.addAll(rotateBot(270, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
-            }
-            else{ //Left
+        if(f1 == 0){    //left
+            proj = new MovingBox(new Point2D.Double(
+                    prev.getPos().getX() - prev.getWidth(),
+                    prev.getPos().getY()
+            ), prev.getWidth());
+
+            if(!staticCollision(proj.getRect())){
                 path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
-                path.addAll(rotateBot(90, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
+                if(f2 == 2){    //bot
+                    path.addAll(rotateBot(180, path.get(path.size() - 1), false));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth(), 1, false));
+                }else if(f2 == 3){  //top
+                    path.addAll(rotateBot(0, path.get(path.size() - 1), true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth(), 1, false));
+                }
             }
-        }
-        else if(face1 == 2){ // Right
-            if(face2 == 1){ // Top
-                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
-                path.addAll(rotateBot(180, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, false));
-            }
-            else{ // Bottom
-                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
-                path.addAll(rotateBot(0, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, false));
-            }
-        }
-        else if(face1 == 3){ // Bottom
-            if(face2 == 2){ // Right
+
+        }else if(f1 == 1){  //right
+            proj = new MovingBox(new Point2D.Double(
+                    prev.getPos().getX() + prev.getWidth(),
+                    prev.getPos().getY()
+            ), prev.getWidth());
+
+            if(!staticCollision(proj.getRect())){
                 path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
-                path.addAll(rotateBot(270, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, true));
+                if(f2 == 2){    //bot
+                    path.addAll(rotateBot(180, path.get(path.size() - 1), true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth(), -1, false));
+                }else if(f2 == 3){  //top
+                    path.addAll(rotateBot(0, path.get(path.size() - 1), false));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth(), -1, false));
+                }
             }
-            else{ // Left
-                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
-                path.addAll(rotateBot(90, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, true));
-            }
-        }
-        else if(face1 == 4){ // Left
-            if(face2 == 3){ //Bottom
+
+        }else if(f1 == 2){  //bot
+            proj = new MovingBox(new Point2D.Double(
+                    prev.getPos().getX(),
+                    prev.getPos().getY() - prev.getWidth()
+            ), prev.getWidth());
+
+            if(!staticCollision(proj.getRect())){
                 path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
-                path.addAll(rotateBot(180, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, false));
+                if(f2 == 0){    //left
+                    path.addAll(rotateBot(90, path.get(path.size() - 1), false));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth(), 1, false));
+                }else if(f2 == 1){  //right
+                    path.addAll(rotateBot(270, path.get(path.size() - 1), true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth(), 1, false));
+                }
             }
-            else{ // Top
-                path.addAll(refaceRobotTransition(state, prev.getWidth() / 2, 1, true));
-                path.addAll(rotateBot(0, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth() / 2, 1, false));
+
+        }else if(f1 == 3){  //top
+            proj = new MovingBox(new Point2D.Double(
+                    prev.getPos().getX(),
+                    prev.getPos().getY() + prev.getWidth()
+            ), prev.getWidth());
+
+            if(!staticCollision(proj.getRect())){
+                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
+                if(f2 == 0){    //left
+                    path.addAll(rotateBot(90, path.get(path.size() - 1), false));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth(), 1, false));
+                }else if(f2 == 1){  //right
+                    path.addAll(rotateBot(270, path.get(path.size() - 1), true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
+                    path.addAll(refaceRobotTransition(state, prev.getWidth(), 1, false));
+                }
             }
+
         }
-        return path;
+
     }
 
     public List<State> refaceRobot(MovingBox prev, MovingBox next, State state){
@@ -328,218 +358,79 @@ public class Sampler {
         if(cur.getPos().getX() < center.getX()){    //left
 //            System.out.println("bot left of center");
             if(nc.getY() > center.getY()){    //next pos is above prev pos so move bot on below
-                if(checkRotation(state, 4, 3)){ // check edge rotation
-                    path.addAll(sideRotate(state, 4, 3, prev));
-                }
-                //elses with daniels
+
+
+
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
+//                path.addAll(rotateBot(180, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, false));
+
             }else if(nc.getY() < center.getY()) {  //down so above
-                if(checkRotation(state, 4, 1)){ // check edge rotation
-                    path.addAll(sideRotate(state, 4, 1, prev));
-                }
-                //elses with daniels
+//                path.addAll(refaceRobotTransition(state, prev.getWidth() / 2, 1, true));
+//                path.addAll(rotateBot(0, path.get(path.size() - 1), true));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth() / 2, 1, false));
+
             }else if(nc.getX() < center.getX()){  //left so right
-                if(checkRotation(state, 4, 1)){
-                    if(checkRotation(state, 1, 2)){
-                        path.addAll(sideRotate(state, 4, 1, prev));
-                        path.addAll(sideRotate(state, 1, 2, prev));
-                    }
-                    // elses with daniels code
-                }
-                //check direction with daniels code
-                else if(checkRotation(state, 4, 3)){
-                    if(checkRotation(state, 3, 2)){
-                        path.addAll(sideRotate(state, 4, 3, prev));
-                        path.addAll(sideRotate(state, 3, 2, prev));
-                    }
-                    // elses with daniels code
-                }
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
+//                path.addAll(rotateBot(0, path.get(path.size() - 1), true));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth(), 1, false));
+//                path.addAll(rotateBot(270, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
             }
 
         }else if(cur.getPos().getX() > center.getX()){  //right
             if(nc.getY() > center.getY()){  //above so below
-                if(checkRotation(state, 2, 3)){ // check edge rotation
-                    path.addAll(sideRotate(state, 2, 3, prev));
-                }
-                //elses with daniels
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, true));
+//                path.addAll(rotateBot(180, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, false));
             }else if(nc.getY() < center.getY()){  //above so below
-                if(checkRotation(state, 2, 1)){ // check edge rotation
-                    path.addAll(sideRotate(state, 2, 1, prev));
-                }
-                //elses with daniels
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
+//                path.addAll(rotateBot(360, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, false));
             }else if(nc.getX() > center.getX()){  //above so below
-                if(checkRotation(state, 2, 1)){
-                    if(checkRotation(state, 1, 4)){
-                        path.addAll(sideRotate(state, 2, 1, prev));
-                        path.addAll(sideRotate(state, 1, 4, prev));
-                    }
-                    // elses with daniels code
-                }
-                //check direction with daniels code
-                else if(checkRotation(state, 2, 3)){
-                    if(checkRotation(state, 3, 4)){
-                        path.addAll(sideRotate(state, 2, 3, prev));
-                        path.addAll(sideRotate(state, 3, 4, prev));
-                    }
-                    // elses with daniels code
-                }
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, true));
+//                path.addAll(rotateBot(0, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth(), -1, false));
+//                path.addAll(rotateBot(90, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
             }
 
         }else if(cur.getPos().getY() < center.getY()){  //down
             if(nc.getX() < center.getX()){  //left so right
-                if(checkRotation(state, 3, 2)){ // check edge rotation
-                    path.addAll(sideRotate(state, 3, 2, prev));
-                }
-                //elses with daniels
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
+//                path.addAll(rotateBot(270, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, true));
             }else if(nc.getX() > center.getX()){  //right so left
-                if(checkRotation(state, 3, 4)){ // check edge rotation
-                    path.addAll(sideRotate(state, 3, 4, prev));
-                }
-                //elses with daniels
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
+//                path.addAll(rotateBot(90, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, true));
             }else if(nc.getY() < center.getY()){  //below so above
-                if(checkRotation(state, 3, 2)){
-                    if(checkRotation(state, 2, 1)){
-                        path.addAll(sideRotate(state, 3, 2, prev));
-                        path.addAll(sideRotate(state, 2, 1, prev));
-                    }
-                    // elses with daniels code
-                }
-                //check direction with daniels code
-                else if(checkRotation(state, 3, 4)){
-                    if(checkRotation(state, 4, 1)){
-                        path.addAll(sideRotate(state, 3, 4, prev));
-                        path.addAll(sideRotate(state, 4, 1, prev));
-                    }
-                    // elses with daniels code
-                }
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
+//                path.addAll(rotateBot(90, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth(), -1, true));
+//                path.addAll(rotateBot(0, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, false));
             }
 
         }else if(cur.getPos().getY() > center.getY()){  //up
             if(nc.getX() < center.getX()){  //left so right
-                if(checkRotation(state, 1, 2)){ // check edge rotation
-                    path.addAll(sideRotate(state, 1, 2, prev));
-                }
-                //elses with daniels
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, 1, false));
+//                path.addAll(rotateBot(270, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
             }else if(nc.getX() > center.getX()){  //right so left
-                if(checkRotation(state, 1, 4)){ // check edge rotation
-                    path.addAll(sideRotate(state, 1, 4, prev));
-                }
-                //elses with daniels
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
+//                path.addAll(rotateBot(90, path.get(path.size() - 1), true));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, -1, true));
             }else if(nc.getY() > center.getY()){  //above so below
-                if(checkRotation(state, 1, 2)){
-                    if(checkRotation(state, 2, 3)){
-                        path.addAll(sideRotate(state, 1, 2, prev));
-                        path.addAll(sideRotate(state, 2, 3, prev));
-                    }
-                    // elses with daniels code
-                }
-                //check direction with daniels code
-                else if(checkRotation(state, 1, 4)){
-                    if(checkRotation(state, 4, 3)){
-                        path.addAll(sideRotate(state, 1, 4, prev));
-                        path.addAll(sideRotate(state, 4, 3, prev));
-                    }
-                    // elses with daniels code
-                }
+//                path.addAll(refaceRobotTransition(state, prev.getWidth()/2, -1, false));
+//                path.addAll(rotateBot(90, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth(), -1, true));
+//                path.addAll(rotateBot(180, path.get(path.size() - 1), false));
+//                path.addAll(refaceRobotTransition(path.get(path.size() - 1), prev.getWidth()/2, 1, false));
             }
         }
 
         return path;
-    }
-
-    public boolean checkRect(State state, Rectangle2D rect){
-        List<MovingBox> movingboxes = state.getMovingBoxes();
-        List<MovingObstacle> movingObstacles = state.getMovingObstacles();
-
-        if(staticCollision(rect)){
-            return false;
-        }
-
-        for(MovingBox box : movingboxes){
-            if(box.getRect().intersects(rect)){
-                return false;
-            }
-        }
-
-        for(MovingObstacle box : movingObstacles){
-            if(box.getRect().intersects(rect)){
-                return false;
-            }
-        }
-        return true;
-    }
-
-
-    public boolean checkRotation(State state, int face1, int face2){
-        // 1 Top, 2 Right, 3 Bottom, 4 Left
-        double width = this.roboWidth;
-        double halfWidth = width / 2;
-        RobotConfig cur = state.getRobo();
-        double y;
-        double x;
-
-        //Top
-        //Top left
-        if((face1 == 1 && face2 == 4) ||(face2 == 1 && face1 == 4) ){
-            y = cur.getPos().getY();
-            x = cur.getPos().getX() - halfWidth;
-            Rectangle2D rect = new Rectangle2D.Double(x, y, halfWidth, halfWidth);
-            if(!checkRect(state, rect)){
-                return false;
-            }
-            y = y - halfWidth;
-            x = x - halfWidth;
-            rect.setRect(x, y, halfWidth, halfWidth);
-            if(!checkRect(state, rect)){
-                return false;
-            }
-        }
-        //Top right
-        else if((face1 == 1 && face2 == 2)||(face2 == 1 && face1 == 2)){
-            y = cur.getPos().getY();
-            x = cur.getPos().getX();
-            Rectangle2D rect = new Rectangle2D.Double(x, y, halfWidth, halfWidth);
-            if(!checkRect(state, rect)){
-                return false;
-            }
-            y = y - halfWidth;
-            x = x + halfWidth;
-            rect.setRect(x, y, halfWidth, halfWidth);
-            if(!checkRect(state, rect)){
-                return false;
-            }
-        }
-        //Bottom
-        //Bottom left
-        else if((face1 == 3 && face2 == 4)||(face2 == 3 && face1 ==4 )){
-            y = cur.getPos().getY() - halfWidth;
-            x = cur.getPos().getX() - halfWidth;
-            Rectangle2D rect = new Rectangle2D.Double(x, y, halfWidth, halfWidth);
-            if(!checkRect(state, rect)){
-                return false;
-            }
-            y = y + halfWidth;
-            x = x - halfWidth;
-            rect.setRect(x, y, halfWidth, halfWidth);
-            if(!checkRect(state, rect)){
-                return false;
-            }
-        }
-        //Bottom right
-        else if((face1 == 3 && face2 == 2)||(face2 == 3 && face1 == 2)){
-            y = cur.getPos().getY() - halfWidth;
-            x = cur.getPos().getX();
-            Rectangle2D rect = new Rectangle2D.Double(x, y, halfWidth, halfWidth);
-            if(!checkRect(state, rect)){
-                return false;
-            }
-            y = y + halfWidth;
-            x = x + halfWidth;
-            rect.setRect(x, y, halfWidth, halfWidth);
-            if(!checkRect(state, rect)){
-                return false;
-            }
-        }
-        return true;
     }
 
     public List<State> orientRobot(MovingBox mb, State state){
@@ -644,39 +535,49 @@ public class Sampler {
 //            MovingBox next = boxPath.get(1);
             for (MovingBox next : boxPath) {
 
-                if(next != null) {
-//                    System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
+//              System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
 
-                    // check path between origin and end (Rec around the origin and end points)
-                    Point2D mapOrigin = new Point2D.Double(min(init.getRect().getMinX(), next.getRect().getMinX()),
-                            min(init.getRect().getMinY(), next.getRect().getMinY()));
+                // check path between origin and end (Rec around the origin and end points)
+                Point2D mapOrigin = new Point2D.Double(min(init.getRect().getMinX(), next.getRect().getMinX()),
+                        min(init.getRect().getMinY(), next.getRect().getMinY()));
 
-                    double width = Math.abs(mapOrigin.getX() - max(init.getRect().getMaxX(), next.getRect().getMaxX()));
-                    double height = Math.abs(mapOrigin.getY() - max(init.getRect().getMaxY(), next.getRect().getMaxY()));
+                double width = Math.abs(mapOrigin.getX() - max(init.getRect().getMaxX(), next.getRect().getMaxX()));
+                double height = Math.abs(mapOrigin.getY() - max(init.getRect().getMaxY(), next.getRect().getMaxY()));
 
-                    Rectangle2D pathSpace = new Rectangle2D.Double(
-                            mapOrigin.getX(), mapOrigin.getY(), width, height);
+                Rectangle2D pathSpace = new Rectangle2D.Double(
+                        mapOrigin.getX(), mapOrigin.getY(), width, height);
 
-                    List<MovingObstacle> newMoPos = moveMovingObstacles(pathSpace, step);
+                List<MovingObstacle> newMoPos = moveMovingObstacles(pathSpace, step);
 
-                    MovingBox last = init;
+                MovingBox last = init;
+                MovingBox intermediate = joinNodes(init, next);
 //                    MovingBox sStep = buildStep(init, next).get(1);
-                    for(MovingBox sStep : buildStep(init, next)){
-                        og = path.get(path.size() - 1);
-                        path.addAll(refaceRobot(last, sStep, og));
 
-                        og = path.get(path.size() - 1);
-                        step = createNewState(intoNewBox, mbog, sStep, last, newMoPos, og.getRobo(), true);
-                        path.add(step);
+                // Path to intermediate node
+                for(MovingBox sStep : buildStep(init, intermediate)){
+                    og = path.get(path.size() - 1);
+                    path.addAll(refaceRobot(last, sStep, og));
 
-                        last = sStep;
-                    }
-                    init = next;
-                }else{
-                    System.out.println("next == null");
+                    og = path.get(path.size() - 1);
+                    step = createNewState(intoNewBox, mbog, sStep, last, newMoPos, og.getRobo(), true);
+                    path.add(step);
+
+                    last = sStep;
                 }
+                // Path from intermediate node to next node
+                for(MovingBox sStep : buildStep(intermediate, next)){
+                    og = path.get(path.size() - 1);
+                    path.addAll(refaceRobot(last, sStep, og));
 
-//                count++;
+                    og = path.get(path.size() - 1);
+                    step = createNewState(intoNewBox, mbog, sStep, last, newMoPos, og.getRobo(), true);
+                    path.add(step);
+
+                    last = sStep;
+                }
+                init = next;
+
+//              count++;
             }
         }
 
@@ -692,17 +593,43 @@ public class Sampler {
             double dy = Math.abs(node.getPos().getY() - mb.getPos().getY());
 
             if(dx < 0.1 && dy < 0.1 && !node.getPos().equals(mb.getPos())){
-
-                double ddx = Math.abs(node.getPos().getX() - focus.getEndPos().getX());
-                double ddy = Math.abs(node.getPos().getY() - focus.getEndPos().getY());
-
-                node.setDistanceToGoal(Math.sqrt(Math.pow(ddx, 2) + Math.pow(ddy, 2)));
-
-                neighbourNodes.add(node);
+//                neighbourNodes.add(node);
+//                node.setEndPos(focus.getEndPos());
+                if (joinNodes(mb, node) != null) {
+                    neighbourNodes.add(node);
+                }
             }
         }
 //        System.out.println("Number of neighbours: " + neighbourNodes.size() + " Number of nodes: " + focusBox.getNodeList().size());
         return neighbourNodes;
+    }
+
+    /**
+     * Finds an intermediate position that link two goals without intersections
+     *
+     * @param start
+     * @param goal
+     * @return
+     */
+    private MovingBox joinNodes(MovingBox start, MovingBox goal) {
+        // Path 1
+        Rectangle2D intermediatePos = new Rectangle2D.Double(start.getPos().getX(),
+                goal.getPos().getY(), start.getWidth(), start.getWidth());
+        if (!staticCollision(start.getRect().createUnion(intermediatePos))
+                && !staticCollision(goal.getRect().createUnion(intermediatePos))) {
+            return new MovingBox(
+                    new Point2D.Double(intermediatePos.getMinX(), intermediatePos.getMinY()), start.getWidth());
+        }
+        // Path 2
+        intermediatePos = new Rectangle2D.Double(goal.getPos().getX(),
+                start.getPos().getY(), start.getWidth(), start.getWidth());
+        if (!staticCollision(start.getRect().createUnion(intermediatePos))
+                && !staticCollision(goal.getRect().createUnion(intermediatePos))) {
+            return new MovingBox(
+                    new Point2D.Double(intermediatePos.getMinX(), intermediatePos.getMinY()), start.getWidth());
+        }
+
+        return null;
     }
 
     public List<MovingBox> findBoxPath(MovingBox mb) {
@@ -716,11 +643,11 @@ public class Sampler {
 
         while (!queue.isEmpty()) {
             current = getMinimumNode(queue);
-//            System.out.println("size: " + queue.size() + " cur pos: "
-//                    + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
-//                    + " cur weight: " + current.getWeight()
-//                    + " heuristic: " + current.getHeuristic()
-//                    + " sum: " + (current.getWeight() + current.getHeuristic()));
+            System.out.println("size: " + queue.size() + " cur pos: "
+                    + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
+                    + " cur weight: " + current.getWeight()
+                    + " heuristic: " + current.getHeuristic()
+                    + " sum: " + (current.getWeight() + current.getHeuristic()));
 
             queue.remove(current);
             visited.add(current.getBox().getPos());
@@ -756,9 +683,9 @@ public class Sampler {
             current = current.getPrev();
         }
 
-//        System.out.println("final: " + boxPath.get(boxPath.size() - 1).getPos().getX()
-//                + ", " + boxPath.get(boxPath.size() - 1).getPos().getY());
-//        System.out.println("goal: " + goal.getPos().getX() + ", " + goal.getPos().getY());
+        System.out.println("final: " + boxPath.get(boxPath.size() - 1).getPos().getX()
+                + ", " + boxPath.get(boxPath.size() - 1).getPos().getY());
+        System.out.println("goal: " + goal.getPos().getX() + ", " + goal.getPos().getY());
         return boxPath;
     }
 
@@ -865,11 +792,21 @@ public class Sampler {
         double curX = getReducedDouble(origin.getPos().getX(), 3);
         double curY = getReducedDouble(origin.getPos().getY(), 3);
 
+//        double goalX = end.getPos().getX();
+//        double goalY = end.getPos().getY();
+//
+//        double curX = origin.getPos().getX();
+//        double curY = origin.getPos().getY();
+
+
         while(curX != goalX || curY != goalY){
             MovingBox last = path.get((path.size() - 1));
 
             double lastX = getReducedDouble(last.getPos().getX(), 3);
             double lastY = getReducedDouble(last.getPos().getY(), 3);
+
+//            double lastX = last.getPos().getX();
+//            double lastY = last.getPos().getY();
 
             // correct X position
             if (lastX < goalX) { //move right
@@ -1086,10 +1023,14 @@ public class Sampler {
     }
 
     private double min(double v1, double v2){
-        return (v1 < v2) ? v1 : v2;
+        if(v1 < v2) return v1;
+
+        return v2;
     }
 
     private double max(double v1, double v2){
-        return (v1 > v2) ? v1 : v2;
+        if(v1 > v2) return v1;
+
+        return v2;
     }
 }

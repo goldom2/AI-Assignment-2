@@ -27,7 +27,6 @@ public class MovingBox extends Box {
 	private Point2D endPos;
 	private Point2D dockPos;
 
-	private double distance;
 	private Set<MovingBox> nodeList = new HashSet<>();
 
 	public MovingBox(Point2D pos, double width) {
@@ -57,14 +56,6 @@ public class MovingBox extends Box {
 
     public Set<MovingBox> getNodeList(){
 	    return nodeList;
-    }
-
-    public void setDistanceToGoal(double dist){
-	    distance = dist;
-    }
-
-    public double getDistanceToGoal(){
-	    return distance;
     }
 
 	public Point2D getEndPos(){
