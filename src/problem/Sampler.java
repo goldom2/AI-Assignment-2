@@ -257,6 +257,8 @@ public class Sampler {
         return path;
     }
 
+
+
     public List<State> refaceRobot(MovingBox prev, MovingBox next, State state){
         List<State> path = new ArrayList<>();
         RobotConfig cur = state.getRobo();
@@ -343,6 +345,53 @@ public class Sampler {
         }
 
         return path;
+    }
+
+    public boolean checkRect(State state, Rectangle2D rect){
+        List<MovingBox> movingboxes = state.getMovingBoxes();
+        List<MovingObstacle> movingObstacles = state.getMovingObstacles();
+
+        if(staticCollision(rect)){
+            return false;
+        }
+
+        for(MovingBox box : movingboxes){
+            if(box.getRect().intersects(rect)){
+                return false;
+            }
+        }
+
+        for(MovingObstacle box : movingObstacles){
+            if(box.getRect().intersects(rect)){
+                return false;
+            }
+        }
+    }
+
+
+    public boolean checkRotation(State state, int face1, int face2){
+        // 1 Top, 2 Right, 3 Bottom, 4 Left
+        double width = this.roboWidth;
+        RobotConfig cur = state.getRobo();
+
+        //Top
+        //Top left
+        if((face1 == 1 && face2 == 4) ||(face2 == 1 && face1 == 4) ){
+
+        }
+        //Top right
+        else if((face1 == 1 && face2 == 2)||(face2 == 1 && face1 == 2)){
+
+        }
+        //Bottom
+        //Bottom left
+        else if((face1 == 3 && face2 == 4)||(face2 == 3 && face1 ==4 )){
+
+        }
+        //Bottom right
+        else if((face1 == 3 && face2 == 2)||(face2 == 3 && face1 == 2)){
+
+        }
     }
 
     public List<State> orientRobot(MovingBox mb, State state){
