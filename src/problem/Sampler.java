@@ -925,7 +925,7 @@ public class Sampler {
         return -1;
     }
 
-    public void stepObjectiveSampling(){
+    public void stepObjectiveSampling(String solutionFile){
         State og = new State(robo, movingBoxes, movingObstacles);
 
         List<State> path = new ArrayList<>();
@@ -956,7 +956,7 @@ public class Sampler {
 
         List<RobotConfig> rp = pathBot(robo, movingBoxes.get(0).getPos(), movingBoxes.get(0).getDockPos(), posRoboConfig);
         RobotConfig last = robo;
-        for(RobotConfig r : rp){
+        for(RobotConfig r : rp) {
 
             RobotConfig intermediate = new RobotConfig(
                     validatePath(last.getPos(), movingBoxes.get(0).getPos()),
@@ -966,25 +966,15 @@ public class Sampler {
 //            System.out.println(intermediate.getPos().getX() + ", " + intermediate.getPos().getY());
 //            System.out.println(r.getPos().getX() + ", " + r.getPos().getY());
 
-            //orient robot based on position
-            path.addAll(orientRobot(mbog, path.get(path.size() - 1)));
-            List<Box> boxPath = findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
-                    mbog.getEndPos(), mbog.getWidth()), mbog.getNodeList());
-            System.out.println(intermediate.getOrientation());
-            System.out.println(r.getOrientation());
-
-//            MovingBox next = boxPath.get(1);
-            for (Box box : boxPath) {
-                MovingBox next = (MovingBox) box;
-                MovingBox last = init;
-                MovingBox intermediate = (MovingBox) joinNodes(init, next);
-            boolean cc = !(intermediate.getOrientation() > r.getOrientation());
+            boolean cc = !(last.getOrientation() < intermediate.getOrientation());
 
             State curState =  path.get(path.size() - 1);
             path.addAll(rotateBot(intermediate.getOrientation() * (180/Math.PI), curState, cc));
 
             curState =  path.get(path.size() - 1);
             path.addAll(moveBot(intermediate.getPos(), curState));
+
+            cc = !(last.getOrientation() < intermediate.getOrientation());
 
             curState =  path.get(path.size() - 1);
             path.addAll(rotateBot(r.getOrientation() * (180/Math.PI), curState, cc));
@@ -994,6 +984,7 @@ public class Sampler {
 
             last = r;
         }
+//            MovingBox next = boxPath.get(1);
 
 //        for(MovingBox mbog : movingBoxes){ //hard limit placed
 //
