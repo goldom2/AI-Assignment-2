@@ -1,3 +1,6 @@
 cd javac_out
-java problem.Main ../%1 ../%2
+set /p input= Input file: 
+set /p solution= Solution file: 
+java problem.Main ../%input% ../%solution%
 cd ..
+pause
