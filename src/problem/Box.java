@@ -20,7 +20,6 @@ public abstract class Box {
 	private double width;
 
 	private Point2D dockPos;
-    private Set<Box> nodeList = new HashSet<>();
 
 	/** Default Constructor */
 	public Box() {
@@ -105,12 +104,4 @@ public abstract class Box {
     public Point2D getDockPos() { return dockPos; }
 
     public void setDockPos(Point2D dockPos) { this.dockPos = dockPos; }
-
-    public void addToNodeList(MovingBox box){
-        nodeList.add(box);
-    }
-
-    public Set<Box> getNodeList(){
-        return nodeList;
-    }
 }
