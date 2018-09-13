@@ -59,8 +59,8 @@ public class Sampler {
                         new Point2D.Double(cur_pos.getPos().getX(), cur_pos.getPos().getY()), box.getWidth());
                 if(following){
                     robotConfig = new RobotConfig(new Point2D.Double(
-                            getReducedDouble(newRobo.getPos().getX() + (cur_pos.getPos().getX() - old_pos.getPos().getX()), 3),
-                            getReducedDouble(newRobo.getPos().getY() + (cur_pos.getPos().getY() - old_pos.getPos().getY()), 3)
+                            newRobo.getPos().getX() + (cur_pos.getPos().getX() - old_pos.getPos().getX()),
+                            newRobo.getPos().getY() + (cur_pos.getPos().getY() - old_pos.getPos().getY())
                     ), newRobo.getOrientation());
                 }
                 newMovingBoxes.add(temp);
@@ -496,14 +496,14 @@ public class Sampler {
         double halfWidth = width / 2;
 //        System.out.println(state.getRobo().getOrientation());
 
-        Point2D center = new Point2D.Double(getReducedDouble(prev.getPos().getX() + prev.getWidth()/2,  3),
-                getReducedDouble(prev.getPos().getY() + prev.getWidth()/2, 3));
-        Point2D nc = new Point2D.Double(getReducedDouble(next.getPos().getX() + next.getWidth()/2, 3),
-                getReducedDouble(next.getPos().getY() + next.getWidth()/2,  3));
+        Point2D center = new Point2D.Double(prev.getPos().getX() + prev.getWidth()/2,
+                prev.getPos().getY() + prev.getWidth()/2);
+        Point2D nc = new Point2D.Double(next.getPos().getX() + next.getWidth()/2,
+                next.getPos().getY() + next.getWidth()/2);
 
-//        System.out.println("robot: " + cur.getPos().getX() + ", " + cur.getPos().getY());
-//        System.out.println("center: " + center.getX() + ", " + center.getY());
-//        System.out.println("next: " + nc.getX() + ", " + nc.getY());
+        System.out.println("robot: " + cur.getPos().getX() + ", " + cur.getPos().getY());
+        System.out.println("center: " + center.getX() + ", " + center.getY());
+        System.out.println("next: " + nc.getX() + ", " + nc.getY());
 
         if(cur.getPos().getX() < center.getX()){    //left
             face1 = 4;
@@ -1348,55 +1348,41 @@ public class Sampler {
     }
 
     // this is won't work "well" needs to be redone with c-space
-    private List<State> moveBot(Point2D end, State state, RobotConfig marker){
+    private List<State> moveBot(Point2D end, State origin, RobotConfig marker){
 
-        // check orientation (0 == horizontal. 90/180 == vertical)
-        // robot-pos marked as the center of the robot
-
+        // build path
         List<State> path = new ArrayList<>();
-        path.add(new State(marker, state.getMovingBoxes(), state.getMovingObstacles()));
+        path.add(origin);
 
-        double curX = marker.getPos().getX();
-        double curY = marker.getPos().getY();
+        double goalX = end.getX();
+        double goalY = end.getY();
 
-        double goalX = getReducedDouble(end.getX(), 3);
-        double goalY = getReducedDouble(end.getY(), 3);
-//        System.out.println("cur: " + curX + ", " + curY);
-//        System.out.println("goal: " + goalX + ", " + goalY);
+        double curX = origin.getRobo().getPos().getX();
+        double curY = origin.getRobo().getPos().getY();
 
         while(curX != goalX || curY != goalY){
-            RobotConfig last = path.get((path.size() - 1)).getRobo();
 
-            double lastX = getReducedDouble(last.getPos().getX(), 3);
-            double lastY = getReducedDouble(last.getPos().getY(), 3);
-
-            // correct X position
-            if (lastX < goalX) { //move right
-                curX = lastX + minStepSize;
-                curY = lastY;
-            } else if (lastX > goalX) { //move left
-                curX = lastX - minStepSize;
-                curY = lastY;
+            // Adjust position of x or y up to maximum step size
+            if (curX != goalX) {
+                if (Math.abs(curX - goalX) > minStepSize) {
+                    curX = (curX - goalX > 0) ? curX - minStepSize : curX + minStepSize;
+                } else {
+                    curX = goalX;
+                }
+            } else if (curY != goalY) {
+                if (Math.abs(curY - goalY) > minStepSize) {
+                    curY = (curY - goalY > 0) ? curY - minStepSize : curY + minStepSize;
+                } else {
+                    curY = goalY;
+                }
             }
-
-            // correct Y position
-            else if (lastY < goalY) { //move up
-                curX = lastX;
-                curY = lastY + minStepSize;
-            } else if (lastY > goalY) { //move down
-                curX = lastX;
-                curY = lastY - minStepSize;
-            }
-
-            curX = getReducedDouble(curX, 3);
-            curY = getReducedDouble(curY, 3);
 
 //            System.out.println("cur: " + curX + ", " + curY);
             RobotConfig newRoboConfig = new RobotConfig(
-                    new Point2D.Double(curX, curY), state.getRobo().getOrientation());
+                    new Point2D.Double(curX, curY), origin.getRobo().getOrientation());
 
             // can check projected, if intersects with obstacle
-            path.add(new State(newRoboConfig, state.getMovingBoxes(), state.getMovingObstacles()));
+            path.add(new State(newRoboConfig, origin.getMovingBoxes(), origin.getMovingObstacles()));
         }
 
         return path;
