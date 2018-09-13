@@ -59,8 +59,8 @@ public class Sampler {
                         new Point2D.Double(cur_pos.getPos().getX(), cur_pos.getPos().getY()), box.getWidth());
                 if(following){
                     robotConfig = new RobotConfig(new Point2D.Double(
-                            newRobo.getPos().getX() + (cur_pos.getPos().getX() - old_pos.getPos().getX()),
-                            newRobo.getPos().getY() + (cur_pos.getPos().getY() - old_pos.getPos().getY())
+                            getReducedDouble(newRobo.getPos().getX() + (cur_pos.getPos().getX() - old_pos.getPos().getX()), 3),
+                            getReducedDouble(newRobo.getPos().getY() + (cur_pos.getPos().getY() - old_pos.getPos().getY()), 3)
                     ), newRobo.getOrientation());
                 }
                 newMovingBoxes.add(temp);
@@ -322,7 +322,7 @@ public class Sampler {
         else if(face1 == 2){ // Right
             if(face2 == 1){ // Top
                 path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
-                path.addAll(rotateBot(0, path.get(path.size() - 1), true));
+                path.addAll(rotateBot(360, path.get(path.size() - 1), true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
             }
             else{ // Bottom
@@ -502,8 +502,8 @@ public class Sampler {
                 next.getPos().getY() + next.getWidth()/2);
 
         System.out.println("robot: " + cur.getPos().getX() + ", " + cur.getPos().getY());
-        System.out.println("center: " + center.getX() + ", " + center.getY());
-        System.out.println("next: " + nc.getX() + ", " + nc.getY());
+      System.out.println("center: " + center.getX() + ", " + center.getY());
+      System.out.println("next: " + nc.getX() + ", " + nc.getY());
 
         if(cur.getPos().getX() < center.getX()){    //left
             face1 = 4;
@@ -516,6 +516,9 @@ public class Sampler {
                 face2 = 2;
                 intFace = 3;
             }
+            else{
+                return path;
+            }
 
         }else if(cur.getPos().getX() > center.getX()){  //right
             face1 = 2;
@@ -526,6 +529,9 @@ public class Sampler {
             }else if(nc.getX() > center.getX()){  //above so below
                 face2 = 4;
                 intFace = 3;
+            }
+            else{
+                return path;
             }
 
         }else if(cur.getPos().getY() < center.getY()){  //down
@@ -538,6 +544,9 @@ public class Sampler {
                 face2 = 1;
                 intFace = 2;
             }
+            else{
+                return path;
+            }
 
         }else if(cur.getPos().getY() > center.getY()){  //up
             face1 = 1;
@@ -549,10 +558,14 @@ public class Sampler {
                 face2 = 3;
                 intFace = 2;
             }
+            else{
+                return path;
+            }
         }
 
         if(intFace == 0){
             method = checkRotation(state, face1, face2);
+            System.out.println("method: " + method);
             if(method ==1){
                 path.addAll(sideRotate(state, face1, face2, halfWidth));
             }
@@ -563,8 +576,9 @@ public class Sampler {
                 path.addAll(nextRotate(state, face1, face2, halfWidth));
             }
             if(method == 0){
-
+                System.out.println("Shit");
             }
+
         }
         else{
             System.out.println("Switch");
@@ -613,6 +627,7 @@ public class Sampler {
         h = h - 0.0002;
 
         if(x < 0 || y < 0 || x > 1 - h/2 || y > 1 - h/2){
+            System.out.println("Wall");
             return false;
         }
 
@@ -668,6 +683,7 @@ public class Sampler {
 
     public int checkRotation(State state, int face1, int face2){
         // 1 Top, 2 Right, 3 Bottom, 4 Left
+        System.out.println("Face 1: " + face1 + ", Face 2: " +face2);
         double width = this.roboWidth;
         double halfWidth = width / 2;
         RobotConfig cur = state.getRobo();
