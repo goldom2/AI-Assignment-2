@@ -1012,10 +1012,10 @@ public class Sampler {
 
         State step = og;    //the last step
 
-        MovingBox mbog = movingBoxes.get(1);
-        RobotConfig trc = new RobotConfig(movingBoxes.get(0).getEndPos(), roboWidth);
-        State ts = new State(trc, movingBoxes, movingObstacles);
-//        for(MovingBox mbog : movingBoxes){ //hard limit placed
+//        MovingBox mbog = movingBoxes.get(1);
+//        RobotConfig trc = new RobotConfig(movingBoxes.get(0).getEndPos(), roboWidth);
+//        State ts = new State(trc, movingBoxes, movingObstacles);
+        for(MovingBox mbog : movingBoxes){ //hard limit placed
 
             Box init = mbog;
             State intoNewBox = step;
@@ -1023,10 +1023,10 @@ public class Sampler {
             Point2D robDockPos = findDock(mbog, path.get(path.size() - 1).getRobo());
             mbog.setDockPos(robDockPos);
 
-            System.out.println(robDockPos.getX() + ", " + robDockPos.getY());
+//            System.out.println(robDockPos.getX() + ", " + robDockPos.getY());
             posRoboConfig.add(new RobotConfig(robDockPos, 0));
 
-            path.addAll(linkRobToObjective(ts, posRoboConfig, mbog));
+            path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, mbog));
 
             sampleNewState(mbog);
             List<Box> boxPath = findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
@@ -1071,7 +1071,7 @@ public class Sampler {
 //              count++;
             }
 
-//        }
+        }
 
         printOutput(solutionFile, path);
     }
@@ -1147,7 +1147,7 @@ public class Sampler {
                 }
             }
         }
-        System.out.println("Number of neighbours: " + neighbourNodes.size() + " Number of nodes: " + samples.size());
+//        System.out.println("Number of neighbours: " + neighbourNodes.size() + " Number of nodes: " + samples.size());
         return neighbourNodes;
     }
 
@@ -1199,11 +1199,11 @@ public class Sampler {
         // Continue search until there is no more options or the goal is reached
         while (!queue.isEmpty()) {
             current = getMinimumNode(queue);
-            System.out.println("size: " + queue.size() + "  \tcur pos: "
-                    + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
-                    + "  \tcur weight: " + current.getWeight()
-                    + " \theuristic: " + current.getHeuristic()
-                    + " \tsum: " + (current.getWeight() + current.getHeuristic()));
+//            System.out.println("size: " + queue.size() + "  \tcur pos: "
+//                    + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
+//                    + "  \tcur weight: " + current.getWeight()
+//                    + " \theuristic: " + current.getHeuristic()
+//                    + " \tsum: " + (current.getWeight() + current.getHeuristic()));
 
             queue.remove(current);
             visited.add(current.getBox().getPos());
@@ -1448,18 +1448,19 @@ public class Sampler {
 
         Point2D end = focus.getDockPos();
 
-        for(RobotConfig s : samples){
-            if(s.getPos().equals(end)){
-                System.out.println("yes");
-            }
-//            System.out.println(s.getPos().getX() + ", " + s.getPos().getY());
-        }
+//        for(RobotConfig s : samples){
+//            if(s.getPos().equals(end)){
+//                System.out.println("yes");
+//            }
+////            System.out.println(s.getPos().getX() + ", " + s.getPos().getY());
+//        }
 
         RoboPos current = new RoboPos(start, 0.0, start.getPos().distance(end), null);
         queue.add(current);
 
         // Continue search until there is no more options or the goal is reached
-        while (!queue.isEmpty()) {
+        int count = 0;
+        while (count < 3) {
             current = getNextRobo(queue);
             System.out.println("size: " + queue.size() + "  \tcur pos: "
                     + current.getRobo().getPos().getX() + ", " + current.getRobo().getPos().getY());
@@ -1470,19 +1471,26 @@ public class Sampler {
             visited.add(current.getRobo().getPos());
 
             if (end.equals(current.getRobo().getPos())) {
-                break;
+//                break;
             }
 
+            System.out.println("------");
             for (RobotConfig rb : getRoboNeighbours(samples, current.getRobo(), focus)) {
-                if (visited.contains(rb.getPos())) {
-//                    System.out.println(visited.size());
-                    continue;
-                }
-                double weight = current.getWeight() +
+                if (!visited.contains(rb.getPos())) {
+                    double weight = current.getWeight() +
                         + Math.abs(current.getRobo().getPos().getX() - rb.getPos().getX())
                         + Math.abs(current.getRobo().getPos().getY() - rb.getPos().getY());
-                queue.add(new RoboPos(rb, weight, rb.getPos().distance(end), current));
+                    queue.add(new RoboPos(rb, weight, rb.getPos().distance(end), current));
+                }else{
+                    for(Point2D pos : visited){
+                        System.out.println(pos.getX() + ", " + pos.getY());
+                        System.out.println(rb.getPos().getX() + ", " + rb.getPos().getY());
+                        System.out.println(rb.equals(pos));
+                    }
+                }
             }
+
+            count++;
         }
 
         if (end.equals(current.getRobo().getPos())) {
