@@ -64,7 +64,19 @@ public class Sampler {
                 newMovingBoxes.add(box);
             }
         }
-        return new State(robotConfig, newMovingBoxes, state.getMovingObstacles());
+        List<MovingObstacle> newMovingObstacles = new ArrayList<>();
+        for(MovingObstacle obstacle : state.getMovingObstacles()){
+            if(obstacle.equals(old_pos)){
+                robotConfig = new RobotConfig(new Point2D.Double(
+                        robotConfig.getPos().getX() + (new_pos.getPos().getX() - old_pos.getPos().getX()),
+                        robotConfig.getPos().getY() + (new_pos.getPos().getY() - old_pos.getPos().getY())),
+                        robotConfig.getOrientation());
+                newMovingObstacles.add((MovingObstacle) new_pos);
+            }else{
+                newMovingObstacles.add(obstacle);
+            }
+        }
+        return new State(robotConfig, newMovingBoxes, newMovingObstacles);
     }
 
     private boolean sampleRoboStaticCollision(RobotConfig robo){
@@ -243,6 +255,22 @@ public class Sampler {
     }
 
     /**
+     * Choose a goal node from the list of samples
+     *
+     * @param samples
+     * @param path
+     * @return
+     */
+    private Box chooseGoalNode(Set<Box> samples, Rectangle2D path) {
+        for (Box box : samples) {
+            if (!box.getRect().intersects(path)) {
+                return box;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Returns true if the given Rectangle collides with any static obstacles or the edge of the board
      *
      * @param box
@@ -283,7 +311,7 @@ public class Sampler {
         }
     }
 
-    public Set<RobotConfig> findDock(MovingBox mb){
+    public Set<RobotConfig> findDock(Box mb){
         Point2D center = new Point2D.Double(mb.getPos().getX() + mb.getWidth()/2, mb.getPos().getY() + mb.getWidth()/2);
 
         Set<RobotConfig> dockPos = new HashSet<>();
@@ -616,7 +644,7 @@ public class Sampler {
         deltaX = center.getX() - x;
         deltaY = center.getY() - y;
 
-        System.out.println("Delta: " + deltaX + ", " + deltaY);
+//        System.out.println("Delta: " + deltaX + ", " + deltaY);
 
         if(Math.abs(deltaX) < 0.004 && deltaX != 0){
             if(deltaX < 0){
@@ -982,57 +1010,21 @@ public class Sampler {
                 robo.getPos(), Math.PI/2
         )));
 
-        //mapped moving Boxes at assumed states
-        for(MovingBox mb : movingBoxes){
-
-            //find the most accessible/closest position to "dock" the robot
-            Set<RobotConfig> robDockPos = findDock(mb);
-            posRoboConfig.addAll(robDockPos);
-            mb.setDockPos(robDockPos);
-
-            sampleNewState(mb);
-        }
+//        //mapped moving Boxes at assumed states
+//        for(MovingBox mb : movingBoxes){
+//
+//            //find the most accessible/closest position to "dock" the robot
+//            Set<RobotConfig> robDockPos = findDock(mb);
+//            posRoboConfig.addAll(robDockPos);
+//            mb.setDockPos(robDockPos);
+//
+////            sampleNewState(mb);
+//        }
 
 //        MovingBox mbog = movingBoxes.get(0);
         for(MovingBox mbog : movingBoxes){ //hard limit placed
-            pathBox(mbog, new MovingBox(mbog.getEndPos(), mbog.getEndPos(), mbog.getWidth()), path);
-//            Box init = mbog;
-//            State step;
-//            path.addAll(linkRobToObjective(path.get(path.size() - 1), mbog));
-//            List<Box> boxPath = findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
-//                    mbog.getEndPos(), mbog.getWidth()), mbog.getNodeList());
-//
-//            for (Box next : boxPath) {
-//
-//                Box last = init;
-//                Box intermediate = joinNodes(init, next);
-//
-//                // Path to intermediate node from initial node
-//                for(Box sStep : buildStep(init, intermediate)){
-//                    og = path.get(path.size() - 1);
-//                    path.addAll(refaceRobot(last, sStep, og));
-//
-//                    og = path.get(path.size() - 1);
-//                    step = createNewState(og, sStep, last);
-//
-//                    path.add(step);
-//
-//                    last = sStep;
-//                }
-//                // Path from intermediate node to next node
-//                for(Box sStep : buildStep(intermediate, next)){
-//                    og = path.get(path.size() - 1);
-//                    path.addAll(refaceRobot(last, sStep, og));
-//
-//                    og = path.get(path.size() - 1);
-//                    step = createNewState(og, sStep, last);
-//
-//                    path.add(step);
-//
-//                    last = sStep;
-//                }
-//                init = next;
-//            }
+            pathBox(mbog, new MovingBox(mbog.getEndPos(), mbog.getEndPos(), mbog.getWidth()),
+                    sampleNewState(mbog), path);
         }
 
         printOutput(solutionFile, path);
@@ -1046,50 +1038,72 @@ public class Sampler {
      * @param goal
      * @param path
      */
-    private void pathBox(Box box, Box goal, List<State> path) {
+    private void pathBox(Box box, Box goal, Set<Box> samples, List<State> path) {
+        System.out.println("And another one -------------:<");
+        System.out.println("Gotta move " + ((box instanceof MovingBox) ? "MovingBox " : "MovingObstacle ") + box.toString() + " to " + goal.toString());
         Box init = box;
-        State og;
-        State step;
+        //Find dock positions
+        Set<RobotConfig> robDockPos = findDock(box);
+        posRoboConfig.addAll(robDockPos);
+        box.setDockPos(robDockPos);
         path.addAll(linkRobToObjective(path.get(path.size() - 1), box));
-        List<Box> boxPath;
-        if (true){//box instanceof MovingBox) {
-            MovingBox movingBox = (MovingBox) box;
-            boxPath = findBoxPath(movingBox, goal, sampleNewState(movingBox));
-        } else {
-            MovingObstacle movingObstacle = (MovingObstacle) box;
 
-        }
+        System.out.println("Connected to box yay");
+        List<Box> boxPath = findBoxPath(box, goal, samples);
 
         for (Box next : boxPath) {
-
-            Box last = init;
             Box intermediate = joinNodes(init, next);
-
             // Path to intermediate node from initial node
-            for(Box sStep : buildStep(init, intermediate)){
-                og = path.get(path.size() - 1);
-                path.addAll(refaceRobot(last, sStep, og));
-
-                og = path.get(path.size() - 1);
-                step = createNewState(og, sStep, last);
-
-                path.add(step);
-
-                last = sStep;
-            }
+            addBuildStepsToPath(path, init, intermediate);
             // Path from intermediate node to next node
-            for(Box sStep : buildStep(intermediate, next)){
-                og = path.get(path.size() - 1);
-                path.addAll(refaceRobot(last, sStep, og));
+            addBuildStepsToPath(path, intermediate, next);
 
-                og = path.get(path.size() - 1);
-                step = createNewState(og, sStep, last);
-
-                path.add(step);
-
-                last = sStep;
-            }
             init = next;
+        }
+    }
+
+    private void addBuildStepsToPath(List<State> path, Box init, Box goal) {
+        Rectangle2D union = init.getRect().createUnion(goal.getRect());
+            for (MovingObstacle mo : path.get(path.size() - 1).getMovingObstacles()) {
+                if (mo.getRect().intersects(union) && !mo.equals(init)) {
+                    System.out.println("Oh my it appears there's a block in our path");
+                    Set<Box> nodes = sampleNewState(mo);
+                    Box target = chooseGoalNode(nodes, union);
+                    if (target == null) {
+                        System.out.println("Could not decide upon a goal node");
+                    }
+                    System.out.println("Time to move it");
+                    pathBox(mo, target, nodes, path);
+                    System.out.println("At least I can path it haha");
+                    Set<RobotConfig> robDockPos = findDock(init);
+                    posRoboConfig.addAll(robDockPos);
+                    init.setDockPos(robDockPos);
+                    path.addAll(linkRobToObjective(path.get(path.size() - 1), init));
+                    System.out.println("And I can make it back home yay");
+                }
+            }
+//            for (MovingBox mb : path.get(path.size() - 1).getMovingBoxes()) {
+//                if (mb.getRect().intersects(next.getRect().createUnion(intermediate.getRect()))) {
+//                    Set<Box> nodes = sampleNewState(mb);
+//                    Box target = chooseGoalNode(nodes);
+//                    pathBox(mo, target, nodes, path);
+//                    path.addAll(linkRobToObjective(path.get(path.size() - 1), next));
+//                }
+//            }
+
+        State state;
+        State step;
+        Box last = init;
+        for(Box sStep : buildStep(init, goal)){
+            state = path.get(path.size() - 1);
+            path.addAll(refaceRobot(last, sStep, state));
+
+            state = path.get(path.size() - 1);
+            step = createNewState(state, sStep, last);
+
+            path.add(step);
+
+            last = sStep;
         }
     }
 

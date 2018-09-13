@@ -51,7 +51,7 @@ public class MovingBox extends Box {
 	public Point2D getEndPos(){
     	return endPos;
 	}
-	
+
     public void setEndPos(Point2D endPos){
         this.endPos = endPos;
     }
