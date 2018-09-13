@@ -1014,12 +1014,12 @@ public class Sampler {
 
             //orient robot based on position
             path.addAll(orientRobot(mbog, path.get(path.size() - 1)));
-            List<MovingBox> boxPath = (List) findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
-                    mbog.getEndPos(), mbog.getWidth()), (Set) mbog.getNodeList());
+            List<Box> boxPath = findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
+                    mbog.getEndPos(), mbog.getWidth()), mbog.getNodeList());
 
 //            MovingBox next = boxPath.get(1);
-            for (MovingBox next : boxPath) {
-
+            for (Box box : boxPath) {
+                MovingBox next = (MovingBox) box;
                 MovingBox last = init;
                 MovingBox intermediate = (MovingBox) joinNodes(init, next);
 
