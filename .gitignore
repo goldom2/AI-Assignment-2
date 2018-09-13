@@ -21,7 +21,7 @@ bin/
 
 # IntelliJ
 .idea
-assignment1.iml
+*.iml
 out/
 
 # Gradle
