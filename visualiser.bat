@@ -1,0 +1,2 @@
+cd javac_out
+java visualiser.Visualiser

@@ -26,8 +26,8 @@ public class MovingBox extends Box {
 
 	private Point2D endPos;
 
-	private Set<MovingBox> nodeList = new HashSet<>();
 	private Set<RobotConfig> dockPos = new HashSet<>();
+	private Set<Box> nodeList = new HashSet<>();
 
 	// Probably best to avoid using this constructor
 	public MovingBox(Point2D pos, double width) {
@@ -55,7 +55,7 @@ public class MovingBox extends Box {
         nodeList.add(box);
     }
 
-    public Set<MovingBox> getNodeList(){
+    public Set<Box> getNodeList(){
 	    return nodeList;
     }
 

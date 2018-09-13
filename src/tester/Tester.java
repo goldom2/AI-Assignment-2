@@ -144,6 +144,7 @@ public class Tester {
 
         for (int i = 1; i < robotPath.size(); i++) {
             if (!isValidStep(last, robotPath.get(i))) {
+                System.out.println("dPoint1: " + getPoint1(last).distance(getPoint1(robotPath.get(i))) + ", dPoint2: " + getPoint2(last).distance(getPoint2(robotPath.get(i))));
                 System.out.println("Step size over 0.001 at step " + i);
                 pass = false;
             }
@@ -415,11 +416,12 @@ public class Tester {
             movingObjects.addAll(ps.getMovingObstaclePath().get(i));
             RobotConfig robot = ps.getRobotPath().get(i);
             if (!hasCollision(robot, movingObjects)) {
-                System.out.println("Collision at step " + i);
+                System.out.println("Robot Collision at step " + i);
                 pass = false;
             }
             if (!testGapSliding(robot, movingObjects)) {
-                System.out.println("Collision at step " + i);
+                System.out.println("Slide Collision at step " + i);
+
                 pass = false;
             }
         }
@@ -465,33 +467,39 @@ public class Tester {
         Rectangle2D border = new Rectangle2D.Double(0,0,1,1);
         for (StaticObstacle o: ps.getStaticObstacles()) {
             if (robotLine.intersects(grow(o.getRect(), -MAX_ERROR))) {
+                System.out.println("Line intersects");
                 return false;
             }
         }
 
         if (!border.contains(robotLine.getP1()) || !border.contains(robotLine.getP2())) {
+            System.out.println("Border intersects");
             return false;
         }
 
         for (Box b1: movingObjects) {
 
             if (!border.contains(b1.getRect())) {
+                System.out.println("Border intersects");
                 return false;
             }
 
             Rectangle2D collisionBox = grow(b1.getRect(),-MAX_ERROR);
             if (collisionBox.intersectsLine(robotLine)) {
+                System.out.println("Line intersects");
                     return false;
             }
 
             for (Box b2: movingObjects) {
                 if ((!b1.equals(b2)) && (collisionBox.intersects(b2.getRect()))) {
+                    System.out.println("Moving collide");
                     return false;
                 }
             }
 
             for (StaticObstacle o: ps.getStaticObstacles()) {
                 if (collisionBox.intersects(o.getRect()) || robotLine.intersects(o.getRect())) {
+                    System.out.println("Static collide");
                     return false;
                 }
             }

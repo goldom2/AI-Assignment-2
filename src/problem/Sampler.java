@@ -225,9 +225,9 @@ public class Sampler {
      *
      * @param solution
      */
-    public void printOutput(List<State> solution) {
+    public void printOutput(String solutionFile, List<State> solution) {
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("solution1.txt"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(solutionFile));
 
             writer.write(Integer.toString(solution.size()));
             writer.newLine();
@@ -286,7 +286,7 @@ public class Sampler {
 
 //        System.out.println("cur angle: " + angle + " target: " + target);
 
-        double maxIncrementAngle = getReducedDouble(minStepSize/(Math.PI*(roboWidth/2))*360, 8);
+        double maxIncrementAngle = getReducedDouble((minStepSize / (Math.PI * (roboWidth / 2)) * 360) / 2, 8);
         double margin = getReducedDouble(maxIncrementAngle*Math.floor(Math.abs(target - angle)/maxIncrementAngle), 8);
         double offset = getReducedDouble(Math.abs(Math.abs(target - angle) - margin), 8);
 
@@ -556,7 +556,6 @@ public class Sampler {
         double halfWidth = width / 2;
         double deltaX;
         double deltaY;
-        boolean flag = false;
         double x;
         double y;
 //        System.out.println(state.getRobo().getOrientation());
@@ -575,47 +574,33 @@ public class Sampler {
 
         deltaX = center.getX() - x;
         deltaY = center.getY() - y;
-//        System.out.println(deltaX + ", " + deltaY);
+
+        System.out.println("Delta: " + deltaX + ", " + deltaY);
 
         if(Math.abs(deltaX) < 0.004 && deltaX != 0){
             if(deltaX < 0){
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaX), -1, false));
-                flag = true;
             }
             else{
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaX), 1, false));
-                flag = true;
             }
-
-            x = x + deltaX;
-        }
-
-        if(flag){
             state = path.get(path.size() - 1);
-            flag = false;
         }
+
 
         if(Math.abs(deltaY) < 0.004 && deltaY != 0){
             if(deltaY < 0){
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaY), -1, true));
-                flag = true;
             }
             else{
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaY), 1, true));
-                flag = true;
             }
-
-            y = y + deltaY;
-
-        }
-
-        if(flag){
             state = path.get(path.size() - 1);
         }
 
-//        System.out.println("Corrected robot: " + x + ", " + y);
+        cur = state.getRobo();
 
-        if(x < center.getX()){    //left
+        if(cur.getPos().getX() < center.getX()){    //left
             face1 = 4;
 //            System.out.println("bot left of center");
             if(nc.getY() > center.getY()){    //next pos is above prev pos so move bot on below
@@ -630,7 +615,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(x > center.getX()){  //right
+        }else if(cur.getPos().getX() > center.getX()){  //right
             face1 = 2;
             if(nc.getY() > center.getY()){  //above so below
                 face2 = 3;
@@ -644,7 +629,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(y < center.getY()){  //down
+        }else if(cur.getPos().getY() < center.getY()){  //down
             face1 = 3;
             if(nc.getX() < center.getX()){  //left so right
                 face2 = 2;
@@ -658,7 +643,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(y > center.getY()){  //up
+        }else if(cur.getPos().getY() > center.getY()){  //up
             face1 = 1;
             if(nc.getX() < center.getX()){  //left so right
                 face2 = 2;
@@ -673,8 +658,9 @@ public class Sampler {
             }
         }
 
+
         if(intFace == 0){
-            method = checkRotation(state, face1, face2);
+            method = checkRotation(state, face1, face2, center.getX(), center.getY());
 //            System.out.println("method: " + method);
             if(method ==1){
                 path.addAll(sideRotate(state, face1, face2, halfWidth));
@@ -692,8 +678,8 @@ public class Sampler {
         }
         else{
 //            System.out.println("Switch");
-            method = checkRotation(state, face1, intFace);
-            method2 = checkRotation(state, intFace, face2);
+            method = checkRotation(state, face1, intFace, center.getX(), center.getY());
+            method2 = checkRotation(state, intFace, face2, center.getX(), center.getY());
             if(method == 0 || method2 == 0){
                 if(intFace == 2){
                     intFace = 4;
@@ -701,8 +687,8 @@ public class Sampler {
                 else{
                     intFace = 1;
                 }
-                method = checkRotation(state, face1, intFace);
-                method2 = checkRotation(state, intFace, face2);
+                method = checkRotation(state, face1, intFace, center.getX(), center.getY());
+                method2 = checkRotation(state, intFace, face2, center.getX(), center.getY());
             }
             if(method ==1){
                 path.addAll(sideRotate(state, face1, intFace, halfWidth));
@@ -731,11 +717,6 @@ public class Sampler {
         List<MovingBox> movingboxes = state.getMovingBoxes();
         List<MovingObstacle> movingObstacles = state.getMovingObstacles();
 
-        x = x + 0.0001;
-        y = y + 0.0001;
-        w = w - 0.0002;
-        h = h - 0.0002;
-
         if(x < 0 || y < 0 || x > 1 - h/2 || y > 1 - h/2){
 //            System.out.println("Wall");
             return false;
@@ -754,17 +735,16 @@ public class Sampler {
                 return false;
             }
         }
+
+        for(MovingBox box : movingboxes){
+            if(box.getRect().intersects(rect)){
+                System.out.println("box");
+                return false;
+            }
+        }
+
+
         return true;
-
-        //for(MovingBox box : movingboxes){
-        //    if(box.getRect().intersects(rect)){
-        //        System.out.println("box");
-        //        return false;
-        //    }
-        //}
-
-
-        //return true;
     }
 
     public boolean checkSide(State state, double halfWidth, double centX, double centY, int side){
@@ -791,7 +771,7 @@ public class Sampler {
     }
 
 
-    public int checkRotation(State state, int face1, int face2){
+    public int checkRotation(State state, int face1, int face2, double X, double Y){
         // 1 Top, 2 Right, 3 Bottom, 4 Left
 //        System.out.println("Face 1: " + face1 + ", Face 2: " +face2);
         double width = this.roboWidth;
@@ -802,11 +782,26 @@ public class Sampler {
         double centX;
         double centY;
 
+        if(face1 == 1){
+            x = X;
+            y = Y + halfWidth;
+        }
+        else if(face1 == 2){
+            x = X + halfWidth;
+            y = Y;
+        }
+        else if(face1 == 3){
+            x = X;
+            y = Y - halfWidth;
+        }
+        else{
+            x = X - halfWidth;
+            y = Y;
+        }
         //Top
         //Top left
         if((face1 == 1 && face2 == 4) ||(face2 == 1 && face1 == 4) ){
-            y = cur.getPos().getY();
-            x = cur.getPos().getX() - halfWidth;
+            x = x - halfWidth;
             if(checkRect(state, x, y, halfWidth, halfWidth)){
                 y = y - halfWidth;
                 x = x - halfWidth;
@@ -815,22 +810,18 @@ public class Sampler {
                 }
             }
             if(face1 == 1){
-                centX = cur.getPos().getX();
-                centY = cur.getPos().getY() - halfWidth;
-                if(checkSide(state, halfWidth, centX, centY, face1)){
+                if(checkSide(state, halfWidth, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, centX, centY, face2)){
+                else if(checkSide(state, halfWidth, X, Y, face2)){
                     return 3;
                 }
             }
             else{
-                centX = cur.getPos().getX() + halfWidth;
-                centY = cur.getPos().getY();
-                if(checkSide(state, halfWidth, centX, centY, face1)){
+                if(checkSide(state, halfWidth, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, centX, centY, face2)){
+                else if(checkSide(state, halfWidth, X, Y, face2)){
                     return 3;
                 }
 
@@ -840,8 +831,6 @@ public class Sampler {
         }
         //Top right
         else if((face1 == 1 && face2 == 2)||(face2 == 1 && face1 == 2)){
-            y = cur.getPos().getY();
-            x = cur.getPos().getX();
             if(checkRect(state, x, y, halfWidth, halfWidth)){
                 y = y - halfWidth;
                 x = x + halfWidth;
@@ -850,22 +839,18 @@ public class Sampler {
                 }
             }
             if(face1 == 1){
-                centX = cur.getPos().getX();
-                centY = cur.getPos().getY() - halfWidth;
-                if(checkSide(state, halfWidth, centX, centY, face1)){
+                if(checkSide(state, halfWidth, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, centX, centY, face2)){
+                else if(checkSide(state, halfWidth, X, Y, face2)){
                     return 3;
                 }
             }
             else{
-                centX = cur.getPos().getX() - halfWidth;
-                centY = cur.getPos().getY();
-                if(checkSide(state, halfWidth, centX, centY, face1)){
+                if(checkSide(state, halfWidth, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, centX, centY, face2)){
+                else if(checkSide(state, halfWidth, X, Y, face2)){
                     return 3;
                 }
 
@@ -877,8 +862,8 @@ public class Sampler {
         //Bottom
         //Bottom left
         else if((face1 == 3 && face2 == 4)||(face2 == 3 && face1 ==4 )){
-            y = cur.getPos().getY() - halfWidth;
-            x = cur.getPos().getX() - halfWidth;
+            y = y - halfWidth;
+            x = x - halfWidth;
             if(checkRect(state, x, y, halfWidth, halfWidth)){
                 y = y + halfWidth;
                 x = x - halfWidth;
@@ -887,22 +872,18 @@ public class Sampler {
                 }
             }
             if(face1 == 3){
-                centX = cur.getPos().getX();
-                centY = cur.getPos().getY() + halfWidth;
-                if(checkSide(state, halfWidth, centX, centY, face1)){
+                if(checkSide(state, halfWidth, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, centX, centY, face2)){
+                else if(checkSide(state, halfWidth, X, Y, face2)){
                     return 3;
                 }
             }
             else{
-                centX = cur.getPos().getX() + halfWidth;
-                centY = cur.getPos().getY();
-                if(checkSide(state, halfWidth, centX, centY, face1)){
+                if(checkSide(state, halfWidth, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, centX, centY, face2)){
+                else if(checkSide(state, halfWidth, X, Y, face2)){
                     return 3;
                 }
 
@@ -913,8 +894,7 @@ public class Sampler {
         }
         //Bottom right
         else if((face1 == 3 && face2 == 2)||(face2 == 3 && face1 == 2)){
-            y = cur.getPos().getY() - halfWidth;
-            x = cur.getPos().getX();
+            y = y - halfWidth;
             if(checkRect(state, x, y, halfWidth, halfWidth)){
                 y = y + halfWidth;
                 x = x + halfWidth;
@@ -923,22 +903,18 @@ public class Sampler {
                 }
             }
             if(face1 == 3){
-                centX = cur.getPos().getX();
-                centY = cur.getPos().getY() + halfWidth;
-                if(checkSide(state, halfWidth, centX, centY, face1)){
+                if(checkSide(state, halfWidth, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, centX, centY, face2)){
+                else if(checkSide(state, halfWidth, X, Y, face2)){
                     return 3;
                 }
             }
             else{
-                centX = cur.getPos().getX() - halfWidth;
-                centY = cur.getPos().getY();
-                if(checkSide(state, halfWidth, centX, centY, face1)){
+                if(checkSide(state, halfWidth, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, centX, centY, face2)){
+                else if(checkSide(state, halfWidth, X, Y, face2)){
                     return 3;
                 }
 
@@ -990,9 +966,18 @@ public class Sampler {
 //            System.out.println(intermediate.getPos().getX() + ", " + intermediate.getPos().getY());
 //            System.out.println(r.getPos().getX() + ", " + r.getPos().getY());
 
+            //orient robot based on position
+            path.addAll(orientRobot(mbog, path.get(path.size() - 1)));
+            List<Box> boxPath = findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
+                    mbog.getEndPos(), mbog.getWidth()), mbog.getNodeList());
             System.out.println(intermediate.getOrientation());
             System.out.println(r.getOrientation());
 
+//            MovingBox next = boxPath.get(1);
+            for (Box box : boxPath) {
+                MovingBox next = (MovingBox) box;
+                MovingBox last = init;
+                MovingBox intermediate = (MovingBox) joinNodes(init, next);
             boolean cc = !(intermediate.getOrientation() > r.getOrientation());
 
             State curState =  path.get(path.size() - 1);
@@ -1060,7 +1045,7 @@ public class Sampler {
 //            }
 //        }
 
-        printOutput(path);
+        printOutput(solutionFile, path);
     }
 
     /**
