@@ -25,7 +25,6 @@ public class MovingBox extends Box {
 	 */
 
 	private Point2D endPos;
-	private Set<Box> nodeList = new HashSet<>();
 
 	// Probably best to avoid using this constructor
 	public MovingBox(Point2D pos, double width) {
@@ -49,17 +48,10 @@ public class MovingBox extends Box {
 		return result;
 	}
 
-	public void addToNodeList(MovingBox box){
-        nodeList.add(box);
-    }
-
-    public Set<Box> getNodeList(){
-	    return nodeList;
-    }
-
 	public Point2D getEndPos(){
     	return endPos;
 	}
+	
     public void setEndPos(Point2D endPos){
         this.endPos = endPos;
     }

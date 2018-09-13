@@ -150,50 +150,96 @@ public class Sampler {
      * @param box
      * @return
      */
-    private void sampleNewState(MovingBox box){
-        MovingBox temp;
-        // Randomise samples around the board
-        for (int i = 0; i < 100; i++) {
-            do {
+    private Set<Box> sampleNewState(Box box){
+        Set<Box> samples = new HashSet<>();
+        Box temp;
+        if (box instanceof MovingBox) {
+            MovingBox mb = (MovingBox) box;
+            // Randomise samples around the board
+            for (int i = 0; i < 100; i++) {
+                do {
+                    temp = new MovingBox(
+                            new Point2D.Double(Math.random(), Math.random()), mb.getEndPos(), mb.getWidth());
+                } while (staticCollision(temp.getRect()));
+                samples.add(temp);
+            }
+            // Add samples on static obstacle corners
+            for (StaticObstacle staticObstacle : staticObstacles) {
+                // Bottom left
                 temp = new MovingBox(
-                        new Point2D.Double(Math.random(), Math.random()), box.getEndPos(), box.getWidth());
-            } while (staticCollision(temp.getRect()));
-            box.addToNodeList(temp);
+                        new Point2D.Double(staticObstacle.getRect().getMinX() - mb.getWidth(), staticObstacle.getRect().getMinY() - mb.getWidth()),
+                        mb.getEndPos(), mb.getWidth());
+                if (!staticCollision(temp.getRect())) {
+                    samples.add(temp);
+                }
+                // Bottom right
+                temp = new MovingBox(
+                        new Point2D.Double(staticObstacle.getRect().getMaxX(), staticObstacle.getRect().getMinY() - mb.getWidth()),
+                        mb.getEndPos(), mb.getWidth());
+                if (!staticCollision(temp.getRect())) {
+                    samples.add(temp);
+                }
+                // Top left
+                temp = new MovingBox(
+                        new Point2D.Double(staticObstacle.getRect().getMinX() - mb.getWidth(), staticObstacle.getRect().getMaxY()),
+                        mb.getEndPos(), mb.getWidth());
+                if (!staticCollision(temp.getRect())) {
+                    samples.add(temp);
+                }
+                // Top right
+                temp = new MovingBox(
+                        new Point2D.Double(staticObstacle.getRect().getMaxX(), staticObstacle.getRect().getMinY()),
+                        mb.getEndPos(), mb.getWidth());
+                if (!staticCollision(temp.getRect())) {
+                    samples.add(temp);
+                }
+            }
+            // Add goal to samples
+            temp = new MovingBox(mb.getEndPos(), mb.getEndPos(), mb.getWidth());
+            samples.add(temp);
+        } else {
+            MovingObstacle mo = (MovingObstacle) box;
+            // Randomise samples around the board
+            for (int i = 0; i < 100; i++) {
+                do {
+                    temp = new MovingObstacle(
+                            new Point2D.Double(Math.random(), Math.random()), mo.getWidth());
+                } while (staticCollision(temp.getRect()));
+                samples.add(temp);
+            }
+            // Add samples on static obstacle corners
+            for (StaticObstacle staticObstacle : staticObstacles) {
+                // Bottom left
+                temp = new MovingObstacle(
+                        new Point2D.Double(staticObstacle.getRect().getMinX() - mo.getWidth(),
+                                staticObstacle.getRect().getMinY() - mo.getWidth()), mo.getWidth());
+                if (!staticCollision(temp.getRect())) {
+                    samples.add(temp);
+                }
+                // Bottom right
+                temp = new MovingObstacle(
+                        new Point2D.Double(staticObstacle.getRect().getMaxX(),
+                                staticObstacle.getRect().getMinY() - mo.getWidth()), mo.getWidth());
+                if (!staticCollision(temp.getRect())) {
+                    samples.add(temp);
+                }
+                // Top left
+                temp = new MovingObstacle(
+                        new Point2D.Double(staticObstacle.getRect().getMinX() - mo.getWidth(),
+                                staticObstacle.getRect().getMaxY()), mo.getWidth());
+                if (!staticCollision(temp.getRect())) {
+                    samples.add(temp);
+                }
+                // Top right
+                temp = new MovingObstacle(
+                        new Point2D.Double(staticObstacle.getRect().getMaxX(), staticObstacle.getRect().getMinY()),
+                        mo.getWidth());
+                if (!staticCollision(temp.getRect())) {
+                    samples.add(temp);
+                }
+            }
         }
-        // Add samples on static obstacle corners
-        for (StaticObstacle staticObstacle : staticObstacles) {
-            // Bottom left
-            temp = new MovingBox(
-                    new Point2D.Double(staticObstacle.getRect().getMinX() - box.getWidth(), staticObstacle.getRect().getMinY() - box.getWidth()),
-                    box.getEndPos(), box.getWidth());
-            if (!staticCollision(temp.getRect())) {
-                box.addToNodeList(temp);
-            }
-            // Bottom right
-            temp = new MovingBox(
-                    new Point2D.Double(staticObstacle.getRect().getMaxX(), staticObstacle.getRect().getMinY() - box.getWidth()),
-                    box.getEndPos(), box.getWidth());
-            if (!staticCollision(temp.getRect())) {
-                box.addToNodeList(temp);
-            }
-            // Top left
-            temp = new MovingBox(
-                    new Point2D.Double(staticObstacle.getRect().getMinX() - box.getWidth(), staticObstacle.getRect().getMaxY()),
-                    box.getEndPos(), box.getWidth());
-            if (!staticCollision(temp.getRect())) {
-                box.addToNodeList(temp);
-            }
-            // Top right
-            temp = new MovingBox(
-                    new Point2D.Double(staticObstacle.getRect().getMaxX(), staticObstacle.getRect().getMinY()),
-                    box.getEndPos(), box.getWidth());
-            if (!staticCollision(temp.getRect())) {
-                box.addToNodeList(temp);
-            }
-        }
-        // Add goal to samples
-        temp = new MovingBox(box.getEndPos(), box.getEndPos(), box.getWidth());
-        box.addToNodeList(temp);
+        return samples;
     }
 
     /**
@@ -947,58 +993,104 @@ public class Sampler {
             sampleNewState(mb);
         }
 
-        State step = og;    //the last step
-
-        MovingBox mbog = movingBoxes.get(0);
-//        for(MovingBox mbog : movingBoxes){ //hard limit placed
-
-            Box init = mbog;
-            State intoNewBox = step;
-
-            path.addAll(linkRobToObjective(path.get(path.size() - 1), mbog));
-
-            List<Box> boxPath = findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
-                    mbog.getEndPos(), mbog.getWidth()), mbog.getNodeList());
-
-//            MovingBox next = boxPath.get(1);
-            for (Box next : boxPath) {
-
-                Box last = init;
-                Box intermediate = joinNodes(init, next);
-
-                // Path to intermediate node
-                for(Box sStep : buildStep(init, intermediate)){
-                    og = path.get(path.size() - 1);
-                    path.addAll(refaceRobot(last, sStep, og));
-//                    System.out.println(refaceRobot(last, sStep, og).size());
-
-                    og = path.get(path.size() - 1);
-                    step = createNewState(og, sStep, last);
-
-                    path.add(step);
-
-                    last = sStep;
-                }
-                // Path from intermediate node to next node
-                for(Box sStep : buildStep(intermediate, next)){
-                    og = path.get(path.size() - 1);
-                    path.addAll(refaceRobot(last, sStep, og));
-//                    System.out.println(refaceRobot(last, sStep, og).size());
-
-                    og = path.get(path.size() - 1);
-                    step = createNewState(og, sStep, last);
-
-                    path.add(step);
-
-                    last = sStep;
-                }
-                init = next;
-
-//              count++;
-            }
-//        }
+//        MovingBox mbog = movingBoxes.get(0);
+        for(MovingBox mbog : movingBoxes){ //hard limit placed
+            pathBox(mbog, new MovingBox(mbog.getEndPos(), mbog.getEndPos(), mbog.getWidth()), path);
+//            Box init = mbog;
+//            State step;
+//            path.addAll(linkRobToObjective(path.get(path.size() - 1), mbog));
+//            List<Box> boxPath = findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
+//                    mbog.getEndPos(), mbog.getWidth()), mbog.getNodeList());
+//
+//            for (Box next : boxPath) {
+//
+//                Box last = init;
+//                Box intermediate = joinNodes(init, next);
+//
+//                // Path to intermediate node from initial node
+//                for(Box sStep : buildStep(init, intermediate)){
+//                    og = path.get(path.size() - 1);
+//                    path.addAll(refaceRobot(last, sStep, og));
+//
+//                    og = path.get(path.size() - 1);
+//                    step = createNewState(og, sStep, last);
+//
+//                    path.add(step);
+//
+//                    last = sStep;
+//                }
+//                // Path from intermediate node to next node
+//                for(Box sStep : buildStep(intermediate, next)){
+//                    og = path.get(path.size() - 1);
+//                    path.addAll(refaceRobot(last, sStep, og));
+//
+//                    og = path.get(path.size() - 1);
+//                    step = createNewState(og, sStep, last);
+//
+//                    path.add(step);
+//
+//                    last = sStep;
+//                }
+//                init = next;
+//            }
+        }
 
         printOutput(solutionFile, path);
+    }
+
+    /**
+     * Create the path of the box and robot from box to goal
+     * Updates path with new states
+     *
+     * @param box
+     * @param goal
+     * @param path
+     */
+    private void pathBox(Box box, Box goal, List<State> path) {
+        Box init = box;
+        State og;
+        State step;
+        path.addAll(linkRobToObjective(path.get(path.size() - 1), box));
+        List<Box> boxPath;
+        if (true){//box instanceof MovingBox) {
+            MovingBox movingBox = (MovingBox) box;
+            boxPath = findBoxPath(movingBox, goal, sampleNewState(movingBox));
+        } else {
+            MovingObstacle movingObstacle = (MovingObstacle) box;
+
+        }
+
+        for (Box next : boxPath) {
+
+            Box last = init;
+            Box intermediate = joinNodes(init, next);
+
+            // Path to intermediate node from initial node
+            for(Box sStep : buildStep(init, intermediate)){
+                og = path.get(path.size() - 1);
+                path.addAll(refaceRobot(last, sStep, og));
+
+                og = path.get(path.size() - 1);
+                step = createNewState(og, sStep, last);
+
+                path.add(step);
+
+                last = sStep;
+            }
+            // Path from intermediate node to next node
+            for(Box sStep : buildStep(intermediate, next)){
+                og = path.get(path.size() - 1);
+                path.addAll(refaceRobot(last, sStep, og));
+
+                og = path.get(path.size() - 1);
+                step = createNewState(og, sStep, last);
+
+                path.add(step);
+
+                last = sStep;
+            }
+            init = next;
+        }
     }
 
     public List<State> linkRobToObjective(State prev, Box focus){
