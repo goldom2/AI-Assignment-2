@@ -41,35 +41,30 @@ public class Sampler {
     }
 
     /**
-     * temp visualisation method
+     * Create a new state moving box from old position to current position
      *
-     * @param origin
-     * @param mb
-     * @param cur_pos
+     * @param state
+     * @param new_pos
+     * @param old_pos
      * @return
      */
-    private State createNewState(State origin, MovingBox mb, MovingBox cur_pos, MovingBox old_pos,
-                                 List<MovingObstacle> obsPos, RobotConfig newRobo, boolean following){
+    private State createNewState(State state, Box new_pos, Box old_pos){
 
         List<MovingBox> newMovingBoxes = new ArrayList<>();
-        RobotConfig robotConfig = newRobo;
+        RobotConfig robotConfig = state.getRobo();
 
-        for(MovingBox box : origin.getMovingBoxes()){
-            if(box.equals(mb)){
-                MovingBox temp = new MovingBox(
-                        new Point2D.Double(cur_pos.getPos().getX(), cur_pos.getPos().getY()), box.getWidth());
-                if(following){
-                    robotConfig = new RobotConfig(new Point2D.Double(
-                            newRobo.getPos().getX() + (cur_pos.getPos().getX() - old_pos.getPos().getX()),
-                            newRobo.getPos().getY() + (cur_pos.getPos().getY() - old_pos.getPos().getY())
-                    ), newRobo.getOrientation());
-                }
-                newMovingBoxes.add(temp);
+        for(MovingBox box : state.getMovingBoxes()){
+            if(box.equals(old_pos)){
+                robotConfig = new RobotConfig(new Point2D.Double(
+                        robotConfig.getPos().getX() + (new_pos.getPos().getX() - old_pos.getPos().getX()),
+                        robotConfig.getPos().getY() + (new_pos.getPos().getY() - old_pos.getPos().getY())),
+                        robotConfig.getOrientation());
+                newMovingBoxes.add((MovingBox) new_pos);
             }else{
                 newMovingBoxes.add(box);
             }
         }
-        return new State(robotConfig, newMovingBoxes, obsPos);
+        return new State(robotConfig, newMovingBoxes, state.getMovingObstacles());
     }
 
     private boolean sampleRoboStaticCollision(RobotConfig robo){
@@ -544,7 +539,7 @@ public class Sampler {
         return path;
     }
 
-    public List<State> refaceRobot(MovingBox prev, MovingBox next, State state){
+    public List<State> refaceRobot(Box prev, Box next, State state){
         List<State> path = new ArrayList<>();
         RobotConfig cur = state.getRobo();
         int face1 = 0;
@@ -957,43 +952,41 @@ public class Sampler {
         MovingBox mbog = movingBoxes.get(0);
 //        for(MovingBox mbog : movingBoxes){ //hard limit placed
 
-            MovingBox init = mbog;
+            Box init = mbog;
             State intoNewBox = step;
 
             path.addAll(linkRobToObjective(path.get(path.size() - 1), mbog));
 
-            List<MovingBox> boxPath = (List) findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
-                    mbog.getEndPos(), mbog.getWidth()), (Set) mbog.getNodeList());
+            List<Box> boxPath = findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
+                    mbog.getEndPos(), mbog.getWidth()), mbog.getNodeList());
 
 //            MovingBox next = boxPath.get(1);
-            for (MovingBox next : boxPath) {
+            for (Box next : boxPath) {
 
-                MovingBox last = init;
-                MovingBox intermediate = (MovingBox) joinNodes(init, next);
+                Box last = init;
+                Box intermediate = joinNodes(init, next);
 
                 // Path to intermediate node
-                for(MovingBox sStep : buildStep(init, intermediate)){
+                for(Box sStep : buildStep(init, intermediate)){
                     og = path.get(path.size() - 1);
                     path.addAll(refaceRobot(last, sStep, og));
 //                    System.out.println(refaceRobot(last, sStep, og).size());
 
                     og = path.get(path.size() - 1);
-                    step = createNewState(intoNewBox, mbog, sStep, last,
-                            og.getMovingObstacles(), og.getRobo(), true);
+                    step = createNewState(og, sStep, last);
 
                     path.add(step);
 
                     last = sStep;
                 }
                 // Path from intermediate node to next node
-                for(MovingBox sStep : buildStep(intermediate, next)){
+                for(Box sStep : buildStep(intermediate, next)){
                     og = path.get(path.size() - 1);
                     path.addAll(refaceRobot(last, sStep, og));
 //                    System.out.println(refaceRobot(last, sStep, og).size());
 
                     og = path.get(path.size() - 1);
-                    step = createNewState(intoNewBox, mbog, sStep, last,
-                            og.getMovingObstacles(), og.getRobo(), true);
+                    step = createNewState(og, sStep, last);
 
                     path.add(step);
 
@@ -1086,21 +1079,42 @@ public class Sampler {
      * @return
      */
     private Box joinNodes(Box start, Box goal) {
-        // Path 1
-        Rectangle2D intermediatePos = new Rectangle2D.Double(start.getPos().getX(),
-                goal.getPos().getY(), start.getWidth(), start.getWidth());
-        if (!staticCollision(start.getRect().createUnion(intermediatePos))
-                && !staticCollision(goal.getRect().createUnion(intermediatePos))) {
-            return new MovingBox(
-                    new Point2D.Double(intermediatePos.getMinX(), intermediatePos.getMinY()), start.getWidth());
-        }
-        // Path 2
-        intermediatePos = new Rectangle2D.Double(goal.getPos().getX(),
-                start.getPos().getY(), start.getWidth(), start.getWidth());
-        if (!staticCollision(start.getRect().createUnion(intermediatePos))
-                && !staticCollision(goal.getRect().createUnion(intermediatePos))) {
-            return new MovingBox(
-                    new Point2D.Double(intermediatePos.getMinX(), intermediatePos.getMinY()), start.getWidth());
+        if (start instanceof MovingBox) {
+            // Path 1
+            Rectangle2D intermediatePos = new Rectangle2D.Double(start.getPos().getX(),
+                    goal.getPos().getY(), start.getWidth(), start.getWidth());
+            if (!staticCollision(start.getRect().createUnion(intermediatePos))
+                    && !staticCollision(goal.getRect().createUnion(intermediatePos))) {
+                return new MovingBox(
+                        new Point2D.Double(intermediatePos.getMinX(), intermediatePos.getMinY()),
+                        ((MovingBox)start).getEndPos(), start.getWidth());
+            }
+            // Path 2
+            intermediatePos = new Rectangle2D.Double(goal.getPos().getX(),
+                    start.getPos().getY(), start.getWidth(), start.getWidth());
+            if (!staticCollision(start.getRect().createUnion(intermediatePos))
+                    && !staticCollision(goal.getRect().createUnion(intermediatePos))) {
+                return new MovingBox(
+                        new Point2D.Double(intermediatePos.getMinX(), intermediatePos.getMinY()),
+                        ((MovingBox)start).getEndPos(), start.getWidth());
+            }
+        } else {
+            // Path 1
+            Rectangle2D intermediatePos = new Rectangle2D.Double(start.getPos().getX(),
+                    goal.getPos().getY(), start.getWidth(), start.getWidth());
+            if (!staticCollision(start.getRect().createUnion(intermediatePos))
+                    && !staticCollision(goal.getRect().createUnion(intermediatePos))) {
+                return new MovingObstacle(
+                        new Point2D.Double(intermediatePos.getMinX(), intermediatePos.getMinY()), start.getWidth());
+            }
+            // Path 2
+            intermediatePos = new Rectangle2D.Double(goal.getPos().getX(),
+                    start.getPos().getY(), start.getWidth(), start.getWidth());
+            if (!staticCollision(start.getRect().createUnion(intermediatePos))
+                    && !staticCollision(goal.getRect().createUnion(intermediatePos))) {
+                return new MovingObstacle(
+                        new Point2D.Double(intermediatePos.getMinX(), intermediatePos.getMinY()), start.getWidth());
+            }
         }
 
         return null;
@@ -1262,10 +1276,10 @@ public class Sampler {
         return true;
     }
 
-    public List<MovingBox> buildStep(MovingBox origin, MovingBox end){
+    public List<Box> buildStep(Box origin, Box end){
 
         // build path
-        List<MovingBox> path = new ArrayList<>();
+        List<Box> path = new ArrayList<>();
         path.add(origin);
 
         double goalX = end.getPos().getX();
@@ -1291,8 +1305,15 @@ public class Sampler {
                 }
             }
 
-            MovingBox projMB = new MovingBox(
-                    new Point2D.Double(curX, curY), roboWidth);
+            Box projMB;
+            if (origin instanceof MovingBox) {
+                projMB = new MovingBox(
+                        new Point2D.Double(curX, curY), ((MovingBox) origin).getEndPos(), roboWidth);
+            } else {
+                projMB = new MovingObstacle(
+                        new Point2D.Double(curX, curY), roboWidth);
+            }
+
 
             // can check projected, if intersects with obstacle
 
