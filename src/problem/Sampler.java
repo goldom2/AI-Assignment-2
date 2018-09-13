@@ -506,9 +506,9 @@ public class Sampler {
         Point2D nc = new Point2D.Double(next.getPos().getX() + next.getWidth()/2,
                 next.getPos().getY() + next.getWidth()/2);
 
-        System.out.println("robot: " + cur.getPos().getX() + ", " + cur.getPos().getY());
-        System.out.println("center: " + center.getX() + ", " + center.getY());
-        System.out.println("next: " + nc.getX() + ", " + nc.getY());
+        //System.out.println("robot: " + cur.getPos().getX() + ", " + cur.getPos().getY());
+        //System.out.println("center: " + center.getX() + ", " + center.getY());
+        //System.out.println("next: " + nc.getX() + ", " + nc.getY());
 
         x = cur.getPos().getX();
         y = cur.getPos().getY();
@@ -525,13 +525,10 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaX), 1, false));
                 flag = true;
             }
-
+            state = path.get(path.size() - 1);
             x = x + deltaX;
         }
 
-        if(flag){
-            state = path.get(path.size() - 1);
-        }
 
         if(Math.abs(deltaY) < 0.004 && deltaY != 0){
             if(deltaY < 0){
@@ -542,12 +539,12 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaY), 1, true));
                 flag = true;
             }
-
+            state = path.get(path.size() - 1);
             y = y + deltaY;
 
         }
 
-        System.out.println("Corrected robot: " + x + ", " + y);
+        System.out.println("Delta: " + deltaX + ", " + deltaY);
 
         if(x < center.getX()){    //left
             face1 = 4;
@@ -613,7 +610,7 @@ public class Sampler {
 
         if(intFace == 0){
             method = checkRotation(state, face1, face2);
-            System.out.println("method: " + method);
+            System.out.println("method: " + method + "//////////////////////////////////////////////////////////////////");
             if(method ==1){
                 path.addAll(sideRotate(state, face1, face2, halfWidth));
             }
