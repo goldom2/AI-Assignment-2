@@ -216,9 +216,9 @@ public class Sampler {
      *
      * @param solution
      */
-    public void printOutput(List<State> solution) {
+    public void printOutput(String solutionFile, List<State> solution) {
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("solution1.txt"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(solutionFile));
 
             writer.write(Integer.toString(solution.size()));
             writer.newLine();
@@ -982,7 +982,7 @@ public class Sampler {
     }
 
 
-    public void stepObjectiveSampling(){
+    public void stepObjectiveSampling(String solutionFile){
         State og = new State(robo, movingBoxes, movingObstacles);
 
         List<State> path = new ArrayList<>();
@@ -1057,7 +1057,7 @@ public class Sampler {
             }
         }
 
-        printOutput(path);
+        printOutput(solutionFile, path);
     }
 
     /**

@@ -1,17 +1,19 @@
 package problem;
 
-import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
+        if (args.length != 2) {
+            System.out.println("Usage: java ProgramName inputFileName outputFileName");
+            System.exit(1);
+        }
         ProblemSpec ps = new ProblemSpec();
         try {
-            ps.loadProblem("boxed-in.txt");
+            ps.loadProblem(args[0]);
 //            ps.loadSolution("solution1.txt");
         } catch (IOException e) {
             System.out.println("IO Exception occurred");
@@ -33,6 +35,6 @@ public class Main {
 
         Sampler ss = new Sampler(ps.getInitialRobotConfig(),
                 mb, ps.getStaticObstacles(),mo);
-        ss.stepObjectiveSampling();
+        ss.stepObjectiveSampling(args[1]);
     }
 }
