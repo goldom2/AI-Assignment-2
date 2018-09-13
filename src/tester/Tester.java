@@ -29,14 +29,14 @@ public class Tester {
     public static void main(String[] args) {
         ProblemSpec ps = new ProblemSpec();
         try {
-            ps.loadProblem(args[0]);
+            ps.loadProblem("boxed-in.txt");
         } catch (IOException e1) {
             System.out.println("FAILED: Invalid problem file");
             System.out.println(e1.getMessage());
             return;
         }
         try {
-            ps.loadSolution(args[1]);
+            ps.loadSolution("solution1.txt");
         } catch (IOException e1) {
             System.out.println("FAILED: Invalid solution file");
             System.out.println(e1.getMessage());

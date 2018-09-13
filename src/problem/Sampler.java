@@ -1,5 +1,6 @@
 package problem;
 
+import javax.sound.midi.SysexMessage;
 import javax.swing.plaf.synth.SynthLookAndFeel;
 import java.awt.*;
 import java.awt.geom.Line2D;
@@ -71,22 +72,70 @@ public class Sampler {
         return new State(robotConfig, newMovingBoxes, obsPos);
     }
 
-    private Set<RobotConfig> sampleNewRobo(State origin, RobotConfig roboConfig){
+    private boolean sampleRoboStaticCollision(RobotConfig robo){
+
+        Point2D origin = new Point2D.Double(robo.getPos().getX() - roboWidth/2, robo.getPos().getY());
+        Point2D end = new Point2D.Double(robo.getPos().getX() + roboWidth/2, robo.getPos().getY());
+        Line2D roboModel = new Line2D.Double(origin, end);
+
+        for(StaticObstacle so : staticObstacles){
+            if(roboModel.intersects(so.getRect())){
+                return true;
+            }
+        }
+        Rectangle2D board = new Rectangle2D.Double(0, 0, 1, 1);
+        if (!board.contains(origin) || !board.contains(origin)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private Set<RobotConfig> sampleNewRobo(RobotConfig origin){
 
         Set<RobotConfig> posRobo = new HashSet<>();
-        int count = 0;
+        RobotConfig temp;
 
-        while(count < 10000){
-            RobotConfig newConfig = new RobotConfig(
-                    new Point2D.Double(Math.random(), Math.random()), roboConfig.getOrientation());
-            State temp = new State(newConfig, origin.getMovingBoxes(), origin.getMovingObstacles());
-
-            if(temp.isValid(staticObstacles)){
-                posRobo.add(newConfig);
-            }
-
-            count++;
+        // Randomise samples around the board
+        for (int i = 0; i < 100; i++) {
+            do {
+                temp = new RobotConfig(
+                        new Point2D.Double(Math.random(), Math.random()), origin.getOrientation());
+            } while (sampleRoboStaticCollision(temp));
+            posRobo.add(temp);
         }
+
+//        // Add samples on static obstacle corners
+//        for (StaticObstacle staticObstacle : staticObstacles) {
+//            // Bottom left
+//            temp = new RobotConfig(
+//                    new Point2D.Double(staticObstacle.getRect().getMinX(), staticObstacle.getRect().getMinY()),
+//                    origin.getOrientation());
+//            if (!staticCollision(temp.getRect())) {
+//                box.addToNodeList(temp);
+//            }
+//            // Bottom right
+//            temp = new MovingBox(
+//                    new Point2D.Double(staticObstacle.getRect().getMaxX(), staticObstacle.getRect().getMinY() - box.getWidth()),
+//                    box.getEndPos(), box.getWidth());
+//            if (!staticCollision(temp.getRect())) {
+//                box.addToNodeList(temp);
+//            }
+//            // Top left
+//            temp = new MovingBox(
+//                    new Point2D.Double(staticObstacle.getRect().getMinX() - box.getWidth(), staticObstacle.getRect().getMaxY()),
+//                    box.getEndPos(), box.getWidth());
+//            if (!staticCollision(temp.getRect())) {
+//                box.addToNodeList(temp);
+//            }
+//            // Top right
+//            temp = new MovingBox(
+//                    new Point2D.Double(staticObstacle.getRect().getMaxX(), staticObstacle.getRect().getMinY()),
+//                    box.getEndPos(), box.getWidth());
+//            if (!staticCollision(temp.getRect())) {
+//                box.addToNodeList(temp);
+//            }
+//        }
 
         return posRobo;
     }
@@ -94,11 +143,10 @@ public class Sampler {
     /**
      * Samples a state for the given MovingBox leaving all other boxes where they are
      *
-     * @param origin
      * @param box
      * @return
      */
-    private void sampleNewState(State origin, MovingBox box){
+    private void sampleNewState(MovingBox box){
         MovingBox temp;
         // Randomise samples around the board
         for (int i = 0; i < 100; i++) {
@@ -142,23 +190,6 @@ public class Sampler {
         // Add goal to samples
         temp = new MovingBox(box.getEndPos(), box.getEndPos(), box.getWidth());
         box.addToNodeList(temp);
-//        List<MovingBox> newMovingBoxes = new ArrayList<>();
-//        MovingBox temp;
-//
-//        for(MovingBox box : origin.getMovingBoxes()){
-//
-//            if(box.equals(mb)){
-//                do {
-//                    temp = new MovingBox(
-//                            new Point2D.Double(Math.random(), Math.random()), box.getEndPos(), box.getWidth());
-//                } while (staticCollision(temp.getRect()));
-//
-//                newMovingBoxes.add(temp);
-//                box.addToNodeList(temp);
-//            }else{
-//                newMovingBoxes.add(box);
-//            }
-//        }
     }
 
     /**
@@ -281,8 +312,9 @@ public class Sampler {
         double step = 0;
 
         RobotConfig newRobo = state.getRobo();
+//        System.out.println(dist);
 
-        while(step < dist){
+        while(step < getReducedDouble(dist, 3)){
             if(!updown){
                 newRobo = new RobotConfig(
                         new Point2D.Double(newRobo.getPos().getX() + dir*minStepSize, newRobo.getPos().getY()), orien);
@@ -299,6 +331,20 @@ public class Sampler {
 
             step += minStepSize;
         }
+
+        if(!updown){
+            newRobo = new RobotConfig(
+                    new Point2D.Double(newRobo.getPos().getX() + dir*(dist - step), newRobo.getPos().getY()), orien);
+        }else{
+            newRobo = new RobotConfig(
+                    new Point2D.Double(newRobo.getPos().getX(), newRobo.getPos().getY() + dir*(dist - step)), orien);
+        }
+
+        path.add(new State(
+                newRobo,
+                state.getMovingBoxes(),
+                state.getMovingObstacles()
+        ));
 
         return path;
     }
@@ -322,7 +368,7 @@ public class Sampler {
         else if(face1 == 2){ // Right
             if(face2 == 1){ // Top
                 path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
-                path.addAll(rotateBot(0, path.get(path.size() - 1), true));
+                path.addAll(rotateBot(360, path.get(path.size() - 1), true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
             }
             else{ // Bottom
@@ -494,6 +540,11 @@ public class Sampler {
         int method2;
         double width = this.roboWidth;
         double halfWidth = width / 2;
+        double deltaX;
+        double deltaY;
+        boolean flag = false;
+        double x;
+        double y;
 //        System.out.println(state.getRobo().getOrientation());
 
         Point2D center = new Point2D.Double(prev.getPos().getX() + prev.getWidth()/2,
@@ -501,11 +552,56 @@ public class Sampler {
         Point2D nc = new Point2D.Double(next.getPos().getX() + next.getWidth()/2,
                 next.getPos().getY() + next.getWidth()/2);
 
-        System.out.println("robot: " + cur.getPos().getX() + ", " + cur.getPos().getY());
-        System.out.println("center: " + center.getX() + ", " + center.getY());
-        System.out.println("next: " + nc.getX() + ", " + nc.getY());
+//        System.out.println("robot: " + cur.getPos().getX() + ", " + cur.getPos().getY());
+//        System.out.println("center: " + center.getX() + ", " + center.getY() + " | " + prev.getWidth());
+//        System.out.println("next: " + nc.getX() + ", " + nc.getY());
 
-        if(cur.getPos().getX() < center.getX()){    //left
+        x = cur.getPos().getX();
+        y = cur.getPos().getY();
+
+        deltaX = center.getX() - x;
+        deltaY = center.getY() - y;
+//        System.out.println(deltaX + ", " + deltaY);
+
+        if(Math.abs(deltaX) < 0.004 && deltaX != 0){
+            if(deltaX < 0){
+                path.addAll(refaceRobotTransition(state, Math.abs(deltaX), -1, false));
+                flag = true;
+            }
+            else{
+                path.addAll(refaceRobotTransition(state, Math.abs(deltaX), 1, false));
+                flag = true;
+            }
+
+            x = x + deltaX;
+        }
+
+        if(flag){
+            state = path.get(path.size() - 1);
+            flag = false;
+        }
+
+        if(Math.abs(deltaY) < 0.004 && deltaY != 0){
+            if(deltaY < 0){
+                path.addAll(refaceRobotTransition(state, Math.abs(deltaY), -1, true));
+                flag = true;
+            }
+            else{
+                path.addAll(refaceRobotTransition(state, Math.abs(deltaY), 1, true));
+                flag = true;
+            }
+
+            y = y + deltaY;
+
+        }
+
+        if(flag){
+            state = path.get(path.size() - 1);
+        }
+
+//        System.out.println("Corrected robot: " + x + ", " + y);
+
+        if(x < center.getX()){    //left
             face1 = 4;
 //            System.out.println("bot left of center");
             if(nc.getY() > center.getY()){    //next pos is above prev pos so move bot on below
@@ -516,8 +612,11 @@ public class Sampler {
                 face2 = 2;
                 intFace = 3;
             }
+            else{
+                return path;
+            }
 
-        }else if(cur.getPos().getX() > center.getX()){  //right
+        }else if(x > center.getX()){  //right
             face1 = 2;
             if(nc.getY() > center.getY()){  //above so below
                 face2 = 3;
@@ -527,8 +626,11 @@ public class Sampler {
                 face2 = 4;
                 intFace = 3;
             }
+            else{
+                return path;
+            }
 
-        }else if(cur.getPos().getY() < center.getY()){  //down
+        }else if(y < center.getY()){  //down
             face1 = 3;
             if(nc.getX() < center.getX()){  //left so right
                 face2 = 2;
@@ -538,8 +640,11 @@ public class Sampler {
                 face2 = 1;
                 intFace = 2;
             }
+            else{
+                return path;
+            }
 
-        }else if(cur.getPos().getY() > center.getY()){  //up
+        }else if(y > center.getY()){  //up
             face1 = 1;
             if(nc.getX() < center.getX()){  //left so right
                 face2 = 2;
@@ -549,10 +654,14 @@ public class Sampler {
                 face2 = 3;
                 intFace = 2;
             }
+            else{
+                return path;
+            }
         }
 
         if(intFace == 0){
             method = checkRotation(state, face1, face2);
+//            System.out.println("method: " + method);
             if(method ==1){
                 path.addAll(sideRotate(state, face1, face2, halfWidth));
             }
@@ -563,11 +672,12 @@ public class Sampler {
                 path.addAll(nextRotate(state, face1, face2, halfWidth));
             }
             if(method == 0){
-
+//                System.out.println("Shit");
             }
+
         }
         else{
-            System.out.println("Switch");
+//            System.out.println("Switch");
             method = checkRotation(state, face1, intFace);
             method2 = checkRotation(state, intFace, face2);
             if(method == 0 || method2 == 0){
@@ -613,19 +723,20 @@ public class Sampler {
         h = h - 0.0002;
 
         if(x < 0 || y < 0 || x > 1 - h/2 || y > 1 - h/2){
+//            System.out.println("Wall");
             return false;
         }
 
         Rectangle2D rect = new Rectangle2D.Double(x, y, w, h);
 
         if(staticCollision(rect)){
-            System.out.println("Static");
+//            System.out.println("Static");
             return false;
         }
 
         for(MovingObstacle box : movingObstacles){
             if(box.getRect().intersects(rect)){
-                System.out.println("obstacle");
+//                System.out.println("obstacle");
                 return false;
             }
         }
@@ -668,6 +779,7 @@ public class Sampler {
 
     public int checkRotation(State state, int face1, int face2){
         // 1 Top, 2 Right, 3 Bottom, 4 Left
+//        System.out.println("Face 1: " + face1 + ", Face 2: " +face2);
         double width = this.roboWidth;
         double halfWidth = width / 2;
         RobotConfig cur = state.getRobo();
@@ -889,7 +1001,7 @@ public class Sampler {
         List<State> path = new ArrayList<>();
         path.add(og);
 
-        posRoboConfig = sampleNewRobo(og, robo);
+        posRoboConfig = sampleNewRobo(robo);
 
         //mapped moving Boxes at assumed states
         for(MovingBox mb : movingBoxes){
@@ -899,12 +1011,7 @@ public class Sampler {
             mb.setDockPos(robDockPos);
 
             posRoboConfig.add(new RobotConfig(robDockPos, robo.getOrientation()));
-
-//            for(int i = 0; i < 1000; i++){
-                sampleNewState(og, mb);
-//            }
-
-//            mb.addToNodeList(new MovingBox(mb.getEndPos(), mb.getEndPos(), mb.getWidth()));
+            sampleNewState(mb);
         }
 
         State step = og;    //the last step
@@ -920,35 +1027,25 @@ public class Sampler {
 
             //orient robot based on position
             path.addAll(orientRobot(mbog, path.get(path.size() - 1)));
-            List<MovingBox> boxPath = (List) findBoxPath(mbog, new MovingBox(mbog.getEndPos(), mbog.getEndPos(), mbog.getWidth()), (Set) mbog.getNodeList());
+            List<MovingBox> boxPath = (List) findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
+                    mbog.getEndPos(), mbog.getWidth()), (Set) mbog.getNodeList());
+
 //            MovingBox next = boxPath.get(1);
             for (MovingBox next : boxPath) {
 
-//              System.out.println(next.getPos().getX() + ", " + next.getPos().getY());
-
-                // check path between origin and end (Rec around the origin and end points)
-                Point2D mapOrigin = new Point2D.Double(min(init.getRect().getMinX(), next.getRect().getMinX()),
-                        min(init.getRect().getMinY(), next.getRect().getMinY()));
-
-                double width = Math.abs(mapOrigin.getX() - max(init.getRect().getMaxX(), next.getRect().getMaxX()));
-                double height = Math.abs(mapOrigin.getY() - max(init.getRect().getMaxY(), next.getRect().getMaxY()));
-
-                Rectangle2D pathSpace = new Rectangle2D.Double(
-                        mapOrigin.getX(), mapOrigin.getY(), width, height);
-
-                List<MovingObstacle> newMoPos = moveMovingObstacles(pathSpace, step);
-
                 MovingBox last = init;
                 MovingBox intermediate = (MovingBox) joinNodes(init, next);
-//                    MovingBox sStep = buildStep(init, next).get(1);
 
                 // Path to intermediate node
                 for(MovingBox sStep : buildStep(init, intermediate)){
                     og = path.get(path.size() - 1);
                     path.addAll(refaceRobot(last, sStep, og));
+//                    System.out.println(refaceRobot(last, sStep, og).size());
 
                     og = path.get(path.size() - 1);
-                    step = createNewState(intoNewBox, mbog, sStep, last, newMoPos, og.getRobo(), true);
+                    step = createNewState(intoNewBox, mbog, sStep, last,
+                            og.getMovingObstacles(), og.getRobo(), true);
+
                     path.add(step);
 
                     last = sStep;
@@ -957,9 +1054,12 @@ public class Sampler {
                 for(MovingBox sStep : buildStep(intermediate, next)){
                     og = path.get(path.size() - 1);
                     path.addAll(refaceRobot(last, sStep, og));
+//                    System.out.println(refaceRobot(last, sStep, og).size());
 
                     og = path.get(path.size() - 1);
-                    step = createNewState(intoNewBox, mbog, sStep, last, newMoPos, og.getRobo(), true);
+                    step = createNewState(intoNewBox, mbog, sStep, last,
+                            og.getMovingObstacles(), og.getRobo(), true);
+
                     path.add(step);
 
                     last = sStep;
@@ -1045,11 +1145,11 @@ public class Sampler {
         // Continue search until there is no more options or the goal is reached
         while (!queue.isEmpty()) {
             current = getMinimumNode(queue);
-            System.out.println("size: " + queue.size() + "  \tcur pos: "
-                    + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
-                    + "  \tcur weight: " + current.getWeight()
-                    + " \theuristic: " + current.getHeuristic()
-                    + " \tsum: " + (current.getWeight() + current.getHeuristic()));
+//            System.out.println("size: " + queue.size() + "  \tcur pos: "
+//                    + current.getBox().getPos().getX() + ", " + current.getBox().getPos().getY()
+//                    + "  \tcur weight: " + current.getWeight()
+//                    + " \theuristic: " + current.getHeuristic()
+//                    + " \tsum: " + (current.getWeight() + current.getHeuristic()));
 
             queue.remove(current);
             visited.add(current.getBox().getPos());
@@ -1078,9 +1178,9 @@ public class Sampler {
             current = current.getPrev();
         }
 
-        System.out.println("final: " + boxPath.get(boxPath.size() - 1).getPos().getX()
-                + ", " + boxPath.get(boxPath.size() - 1).getPos().getY());
-        System.out.println("goal: " + goal.getPos().getX() + ", " + goal.getPos().getY());
+//        System.out.println("final: " + boxPath.get(boxPath.size() - 1).getPos().getX()
+//                + ", " + boxPath.get(boxPath.size() - 1).getPos().getY());
+//        System.out.println("goal: " + goal.getPos().getX() + ", " + goal.getPos().getY());
         return boxPath;
     }
 
@@ -1097,6 +1197,24 @@ public class Sampler {
             if (result == null || (node.getWeight() + node.getHeuristic()) < minWeight) {
                 result = node;
                 minWeight = node.getWeight() + node.getHeuristic();
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Return the RoboPos with the smallest distance from the start pos and expected path to goal
+     *
+     * @param queue
+     * @return
+     */
+    public RoboPos getNextRobo(Set<RoboPos> queue) {
+        RoboPos result = null;
+        double minWeight = 0;
+        for (RoboPos pos : queue) {
+            if (result == null || (pos.getWeight() + pos.getHeuristic()) < minWeight) {
+                result = pos;
+                minWeight = pos.getWeight() + pos.getHeuristic();
             }
         }
         return result;
@@ -1311,7 +1429,6 @@ public class Sampler {
     }
 
     private List<State> pathBot(RobotConfig origin, State state, Point2D end){
-
         List<State> path = new ArrayList<>();
         List<RobotConfig> markers = new ArrayList<>();
 
