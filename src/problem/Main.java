@@ -16,7 +16,8 @@ public class Main {
             ps.loadProblem(args[0]);
 //            ps.loadSolution("solution1.txt");
         } catch (IOException e) {
-            System.out.println("IO Exception occurred");
+            System.out.println("IO Exception occurred: Could not load + " + args[0]);
+            System.exit(2);
         }
         System.out.println("Finished loading!");
 

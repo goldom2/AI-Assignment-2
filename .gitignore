@@ -30,3 +30,4 @@ build
 
 # Assignment Specific
 *solution*.txt
+javac_out/
