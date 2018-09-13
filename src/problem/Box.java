@@ -2,6 +2,8 @@ package problem;
 
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -16,6 +18,8 @@ public abstract class Box {
 	public Point2D pos;
 	/** The width of the box */
 	private double width;
+
+	private Set<RobotConfig> dockPos = new HashSet<>();
 
 	/** Default Constructor */
 	public Box() {
@@ -96,4 +100,8 @@ public abstract class Box {
 	public int hashCode() {
 		return rect.hashCode();
 	}
+
+    public Set<RobotConfig> getDockPos() { return dockPos; }
+
+    public void setDockPos(Set<RobotConfig> dockPos) { this.dockPos = dockPos; }
 }

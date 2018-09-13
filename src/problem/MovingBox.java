@@ -25,8 +25,6 @@ public class MovingBox extends Box {
 	 */
 
 	private Point2D endPos;
-
-	private Set<RobotConfig> dockPos = new HashSet<>();
 	private Set<Box> nodeList = new HashSet<>();
 
 	// Probably best to avoid using this constructor
@@ -65,10 +63,6 @@ public class MovingBox extends Box {
     public void setEndPos(Point2D endPos){
         this.endPos = endPos;
     }
-
-	public Set<RobotConfig> getDockPos() { return dockPos; }
-
-	public void setDockPos(Set<RobotConfig> dockPos) { this.dockPos = dockPos; }
 
     @Override
     public boolean equals(Object o) {

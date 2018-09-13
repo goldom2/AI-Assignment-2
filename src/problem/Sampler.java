@@ -954,19 +954,81 @@ public class Sampler {
 
         State step = og;    //the last step
 
-        List<RobotConfig> rp = pathBot(robo, movingBoxes.get(0).getPos(), movingBoxes.get(0).getDockPos(), posRoboConfig);
-        RobotConfig last = robo;
+        MovingBox mbog = movingBoxes.get(0);
+//        for(MovingBox mbog : movingBoxes){ //hard limit placed
+
+            MovingBox init = mbog;
+            State intoNewBox = step;
+
+            path.addAll(linkRobToObjective(path.get(path.size() - 1), mbog));
+
+            List<MovingBox> boxPath = (List) findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
+                    mbog.getEndPos(), mbog.getWidth()), (Set) mbog.getNodeList());
+
+//            MovingBox next = boxPath.get(1);
+            for (MovingBox next : boxPath) {
+
+                MovingBox last = init;
+                MovingBox intermediate = (MovingBox) joinNodes(init, next);
+
+                // Path to intermediate node
+                for(MovingBox sStep : buildStep(init, intermediate)){
+                    og = path.get(path.size() - 1);
+                    path.addAll(refaceRobot(last, sStep, og));
+//                    System.out.println(refaceRobot(last, sStep, og).size());
+
+                    og = path.get(path.size() - 1);
+                    step = createNewState(intoNewBox, mbog, sStep, last,
+                            og.getMovingObstacles(), og.getRobo(), true);
+
+                    path.add(step);
+
+                    last = sStep;
+                }
+                // Path from intermediate node to next node
+                for(MovingBox sStep : buildStep(intermediate, next)){
+                    og = path.get(path.size() - 1);
+                    path.addAll(refaceRobot(last, sStep, og));
+//                    System.out.println(refaceRobot(last, sStep, og).size());
+
+                    og = path.get(path.size() - 1);
+                    step = createNewState(intoNewBox, mbog, sStep, last,
+                            og.getMovingObstacles(), og.getRobo(), true);
+
+                    path.add(step);
+
+                    last = sStep;
+                }
+                init = next;
+
+//              count++;
+            }
+//        }
+
+        printOutput(solutionFile, path);
+    }
+
+    public List<State> linkRobToObjective(State prev, Box focus){
+        List<State> path = new ArrayList<>();
+        path.add(prev);
+
+        RobotConfig cur = prev.getRobo();
+
+        List<RobotConfig> rp = pathBot(cur, focus.getPos(),
+                focus.getDockPos(), posRoboConfig);
+
+        RobotConfig last = cur;
         for(RobotConfig r : rp) {
 
-            RobotConfig intermediate = validatePath(last.getPos(), movingBoxes.get(0).getPos());
+            RobotConfig intermediate = validatePath(last.getPos(), focus.getPos());
 
-//            System.out.println(last.getPos().getX() + ", " + last.getPos().getY());
-//            System.out.println(intermediate.getPos().getX() + ", " + intermediate.getPos().getY());
-//            System.out.println(r.getPos().getX() + ", " + r.getPos().getY());
+            System.out.println("-->" +last.getPos().getX() + ", " + last.getPos().getY());
+            System.out.println(intermediate.getPos().getX() + ", " + intermediate.getPos().getY());
+            System.out.println(r.getPos().getX() + ", " + r.getPos().getY());
 
-            System.out.println("-->" + last.getOrientation());
-            System.out.println(intermediate.getOrientation());
-            System.out.println(r.getOrientation());
+//            System.out.println("-->" + last.getOrientation());
+//            System.out.println(intermediate.getOrientation());
+//            System.out.println(r.getOrientation());
 
             boolean cc = !(last.getOrientation() < intermediate.getOrientation());
 
@@ -986,59 +1048,8 @@ public class Sampler {
 
             last = r;
         }
-//            MovingBox next = boxPath.get(1);
 
-//        for(MovingBox mbog : movingBoxes){ //hard limit placed
-//
-//            MovingBox init = mbog;
-//            State intoNewBox = step;
-//
-//            //pathBot();
-//
-//            List<MovingBox> boxPath = (List) findBoxPath(mbog, new MovingBox(mbog.getEndPos(),
-//                    mbog.getEndPos(), mbog.getWidth()), (Set) mbog.getNodeList());
-//
-////            MovingBox next = boxPath.get(1);
-//            for (MovingBox next : boxPath) {
-//
-//                MovingBox last = init;
-//                MovingBox intermediate = (MovingBox) joinNodes(init, next);
-//
-//                // Path to intermediate node
-//                for(MovingBox sStep : buildStep(init, intermediate)){
-//                    og = path.get(path.size() - 1);
-//                    path.addAll(refaceRobot(last, sStep, og));
-////                    System.out.println(refaceRobot(last, sStep, og).size());
-//
-//                    og = path.get(path.size() - 1);
-//                    step = createNewState(intoNewBox, mbog, sStep, last,
-//                            og.getMovingObstacles(), og.getRobo(), true);
-//
-//                    path.add(step);
-//
-//                    last = sStep;
-//                }
-//                // Path from intermediate node to next node
-//                for(MovingBox sStep : buildStep(intermediate, next)){
-//                    og = path.get(path.size() - 1);
-//                    path.addAll(refaceRobot(last, sStep, og));
-////                    System.out.println(refaceRobot(last, sStep, og).size());
-//
-//                    og = path.get(path.size() - 1);
-//                    step = createNewState(intoNewBox, mbog, sStep, last,
-//                            og.getMovingObstacles(), og.getRobo(), true);
-//
-//                    path.add(step);
-//
-//                    last = sStep;
-//                }
-//                init = next;
-//
-////              count++;
-//            }
-//        }
-
-        printOutput(solutionFile, path);
+        return path;
     }
 
     /**
