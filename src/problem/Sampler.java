@@ -1185,6 +1185,12 @@ public class Sampler {
 
         RobotConfig cur = prev.getRobo();
 
+//        for(RobotConfig sample : samples){
+//            if(focus.getDockPos().equals(sample.getPos())){
+//                System.out.println("we did it");
+//            }
+//        }
+
         List<RobotConfig> rp = pathBot(cur, samples, focus);
 
         RobotConfig last = cur;
@@ -1515,7 +1521,7 @@ public class Sampler {
      */
     public RoboPos getNextRobo(Set<RoboPos> queue) {
         RoboPos result = null;
-        double minWeight = 0;
+        double minWeight = 10;
         for (RoboPos pos : queue) {
             if (result == null || (pos.getWeight() + pos.getHeuristic()) < minWeight) {
                 result = pos;
@@ -1573,7 +1579,7 @@ public class Sampler {
         Set<Point2D> visited = new HashSet<>();
 
         Point2D end = focus.getDockPos();
-        System.out.println("goal: " + end.getX() + ", " + end.getY());
+//        System.out.println("goal: " + end.getX() + ", " + end.getY());
 
         RoboPos current = new RoboPos(start, 0.0, start.getPos().distance(end), null);
         queue.add(current);
@@ -1581,6 +1587,14 @@ public class Sampler {
         // Continue search until there is no more options or the goal is reached
         int count = 0;
         while (!queue.isEmpty()) {
+
+            for(RoboPos pos : queue){
+                if(pos.getRobo().getPos().equals(end)){
+                    System.out.println("we found goal from neighbours");
+                }
+//                System.out.println(pos.getRobo().getPos().getX() + ", " + pos.getRobo().getPos().getY());
+            }
+
             current = getNextRobo(queue);
             System.out.println("size: " + queue.size() + "  \tcur pos: "
                     + current.getRobo().getPos().getX() + ", " + current.getRobo().getPos().getY()
