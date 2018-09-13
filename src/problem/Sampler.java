@@ -494,6 +494,11 @@ public class Sampler {
         int method2;
         double width = this.roboWidth;
         double halfWidth = width / 2;
+        double deltaX;
+        double deltaY;
+        boolean flag = false;
+        double x;
+        double y;
 //        System.out.println(state.getRobo().getOrientation());
 
         Point2D center = new Point2D.Double(prev.getPos().getX() + prev.getWidth()/2,
@@ -502,10 +507,49 @@ public class Sampler {
                 next.getPos().getY() + next.getWidth()/2);
 
         System.out.println("robot: " + cur.getPos().getX() + ", " + cur.getPos().getY());
-      System.out.println("center: " + center.getX() + ", " + center.getY());
-      System.out.println("next: " + nc.getX() + ", " + nc.getY());
+        System.out.println("center: " + center.getX() + ", " + center.getY());
+        System.out.println("next: " + nc.getX() + ", " + nc.getY());
 
-        if(cur.getPos().getX() < center.getX()){    //left
+        x = cur.getPos().getX();
+        y = cur.getPos().getY();
+
+        deltaX = center.getX() - x;
+        deltaY = center.getY() - y;
+
+        if(Math.abs(deltaX) < 0.004 && deltaX != 0){
+            if(deltaX < 0){
+                path.addAll(refaceRobotTransition(state, Math.abs(deltaX), -1, false));
+                flag = true;
+            }
+            else{
+                path.addAll(refaceRobotTransition(state, Math.abs(deltaX), 1, false));
+                flag = true;
+            }
+
+            x = x + deltaX;
+        }
+
+        if(flag){
+            state = path.get(path.size() - 1);
+        }
+
+        if(Math.abs(deltaY) < 0.004 && deltaY != 0){
+            if(deltaY < 0){
+                path.addAll(refaceRobotTransition(state, Math.abs(deltaY), -1, true));
+                flag = true;
+            }
+            else{
+                path.addAll(refaceRobotTransition(state, Math.abs(deltaY), 1, true));
+                flag = true;
+            }
+
+            y = y + deltaY;
+
+        }
+
+        System.out.println("Corrected robot: " + x + ", " + y);
+
+        if(x < center.getX()){    //left
             face1 = 4;
 //            System.out.println("bot left of center");
             if(nc.getY() > center.getY()){    //next pos is above prev pos so move bot on below
@@ -520,7 +564,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(cur.getPos().getX() > center.getX()){  //right
+        }else if(x > center.getX()){  //right
             face1 = 2;
             if(nc.getY() > center.getY()){  //above so below
                 face2 = 3;
@@ -534,7 +578,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(cur.getPos().getY() < center.getY()){  //down
+        }else if(y < center.getY()){  //down
             face1 = 3;
             if(nc.getX() < center.getX()){  //left so right
                 face2 = 2;
@@ -548,7 +592,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(cur.getPos().getY() > center.getY()){  //up
+        }else if(y > center.getY()){  //up
             face1 = 1;
             if(nc.getX() < center.getX()){  //left so right
                 face2 = 2;
@@ -561,6 +605,10 @@ public class Sampler {
             else{
                 return path;
             }
+        }
+
+        if(flag){
+            state = path.get(path.size() - 1);
         }
 
         if(intFace == 0){
