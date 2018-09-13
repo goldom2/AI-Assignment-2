@@ -958,13 +958,15 @@ public class Sampler {
         RobotConfig last = robo;
         for(RobotConfig r : rp) {
 
-            RobotConfig intermediate = new RobotConfig(
-                    validatePath(last.getPos(), movingBoxes.get(0).getPos()),
-                    last.getOrientation());
+            RobotConfig intermediate = validatePath(last.getPos(), movingBoxes.get(0).getPos());
 
 //            System.out.println(last.getPos().getX() + ", " + last.getPos().getY());
 //            System.out.println(intermediate.getPos().getX() + ", " + intermediate.getPos().getY());
 //            System.out.println(r.getPos().getX() + ", " + r.getPos().getY());
+
+            System.out.println("-->" + last.getOrientation());
+            System.out.println(intermediate.getOrientation());
+            System.out.println(r.getOrientation());
 
             boolean cc = !(last.getOrientation() < intermediate.getOrientation());
 
@@ -1308,9 +1310,9 @@ public class Sampler {
         return result;
     }
 
-    public Point2D validatePath(Point2D start, Point2D end){
-        //            |
-        // Path 1 ----|
+    public RobotConfig validatePath(Point2D start, Point2D end){
+        //        |----
+        // Path 1 |
 
         Point2D p = new Point2D.Double(start.getX(), end.getY());
         Line2D l1 = new Line2D.Double(start, p);
@@ -1319,11 +1321,11 @@ public class Sampler {
                 p.getX() - roboWidth/2, p.getY() - roboWidth/2, roboWidth, roboWidth);
 
         if (!lineIntoStatic(l1) && !lineIntoStatic(l2) && !staticCollision(intermediatePos)) {
-            return p;
+            return new RobotConfig(p, Math.PI/2);
         }
 
-        //        |----
-        // Path 2 |
+        //            |
+        // Path 2 ----|
 
         p = new Point2D.Double(start.getX(), end.getY());
         l1 = new Line2D.Double(start, p);
@@ -1332,7 +1334,7 @@ public class Sampler {
                 p.getX() - roboWidth/2, p.getY() - roboWidth/2, roboWidth, roboWidth);
 
         if (!lineIntoStatic(l1) && !lineIntoStatic(l2) && !staticCollision(intermediatePos)) {
-            return p;
+            return new RobotConfig(p, 0);
         }
 
         return null;
