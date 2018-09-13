@@ -4,9 +4,9 @@ public class RoboPos {
     RobotConfig cur;
     double weight;
     double heuristic;
-    RobotConfig prev;
+    RoboPos prev;
 
-    public RoboPos(RobotConfig cur, double weight, double heuristic, RobotConfig prev) {
+    public RoboPos(RobotConfig cur, double weight, double heuristic, RoboPos prev) {
         this.cur = cur;
         this.weight = weight;
         this.heuristic = heuristic;
@@ -17,7 +17,7 @@ public class RoboPos {
         return cur;
     }
 
-    public RobotConfig getPrev() {
+    public RoboPos getPrev() {
         return prev;
     }
 
