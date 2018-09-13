@@ -19,7 +19,8 @@ public abstract class Box {
 	/** The width of the box */
 	private double width;
 
-	private Set<RobotConfig> dockPos = new HashSet<>();
+	private Point2D dockPos;
+    private Set<Box> nodeList = new HashSet<>();
 
 	/** Default Constructor */
 	public Box() {
@@ -101,7 +102,15 @@ public abstract class Box {
 		return rect.hashCode();
 	}
 
-    public Set<RobotConfig> getDockPos() { return dockPos; }
+    public Point2D getDockPos() { return dockPos; }
 
-    public void setDockPos(Set<RobotConfig> dockPos) { this.dockPos = dockPos; }
+    public void setDockPos(Point2D dockPos) { this.dockPos = dockPos; }
+
+    public void addToNodeList(MovingBox box){
+        nodeList.add(box);
+    }
+
+    public Set<Box> getNodeList(){
+        return nodeList;
+    }
 }
