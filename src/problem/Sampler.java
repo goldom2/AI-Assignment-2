@@ -561,47 +561,33 @@ public class Sampler {
 
         deltaX = center.getX() - x;
         deltaY = center.getY() - y;
-//        System.out.println(deltaX + ", " + deltaY);
+
+        System.out.println("Delta: " + deltaX + ", " + deltaY);
 
         if(Math.abs(deltaX) < 0.004 && deltaX != 0){
             if(deltaX < 0){
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaX), -1, false));
-                flag = true;
             }
             else{
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaX), 1, false));
-                flag = true;
             }
-
-            x = x + deltaX;
-        }
-
-        if(flag){
             state = path.get(path.size() - 1);
-            flag = false;
         }
+
 
         if(Math.abs(deltaY) < 0.004 && deltaY != 0){
             if(deltaY < 0){
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaY), -1, true));
-                flag = true;
             }
             else{
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaY), 1, true));
-                flag = true;
             }
-
-            y = y + deltaY;
-
-        }
-
-        if(flag){
             state = path.get(path.size() - 1);
         }
 
-//        System.out.println("Corrected robot: " + x + ", " + y);
+        cur = state.getRobo();
 
-        if(x < center.getX()){    //left
+        if(cur.getPos().getX() < center.getX()){    //left
             face1 = 4;
 //            System.out.println("bot left of center");
             if(nc.getY() > center.getY()){    //next pos is above prev pos so move bot on below
@@ -616,7 +602,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(x > center.getX()){  //right
+        }else if(cur.getPos().getX() > center.getX()){  //right
             face1 = 2;
             if(nc.getY() > center.getY()){  //above so below
                 face2 = 3;
@@ -630,7 +616,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(y < center.getY()){  //down
+        }else if(cur.getPos().getY() < center.getY()){  //down
             face1 = 3;
             if(nc.getX() < center.getX()){  //left so right
                 face2 = 2;
@@ -644,7 +630,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(y > center.getY()){  //up
+        }else if(cur.getPos().getY() > center.getY()){  //up
             face1 = 1;
             if(nc.getX() < center.getX()){  //left so right
                 face2 = 2;
@@ -658,6 +644,7 @@ public class Sampler {
                 return path;
             }
         }
+
 
         if(intFace == 0){
             method = checkRotation(state, face1, face2);
