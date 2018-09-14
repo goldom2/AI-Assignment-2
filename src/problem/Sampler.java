@@ -153,6 +153,70 @@ public class Sampler {
             }
         }
 
+        // Add samples on moving obstacle corners
+        for (MovingObstacle obstacle : movingObstacles) {
+            // Bottom left
+            temp = new RobotConfig(
+                    new Point2D.Double(obstacle.getRect().getMinX(), obstacle.getRect().getMinY()),
+                    origin.getOrientation());
+            if (!sampleRoboStaticCollision(temp)) {
+                posRobo.add(temp);
+            }
+            // Bottom right
+            temp = new RobotConfig(
+                    new Point2D.Double(obstacle.getRect().getMaxX(), obstacle.getRect().getMinY()),
+                    origin.getOrientation());
+            if (!sampleRoboStaticCollision(temp)) {
+                posRobo.add(temp);
+            }
+            // Top left
+            temp = new RobotConfig(
+                    new Point2D.Double(obstacle.getRect().getMinX(), obstacle.getRect().getMaxY()),
+                    origin.getOrientation());
+            if (!sampleRoboStaticCollision(temp)) {
+                posRobo.add(temp);
+            }
+            // Top right
+            temp = new RobotConfig(
+                    new Point2D.Double(obstacle.getRect().getMaxX(), obstacle.getRect().getMinY()),
+                    origin.getOrientation());
+            if (!sampleRoboStaticCollision(temp)) {
+                posRobo.add(temp);
+            }
+        }
+
+        // Add samples on moving box corners
+        for (MovingBox box : movingBoxes) {
+            // Bottom left
+            temp = new RobotConfig(
+                    new Point2D.Double(box.getRect().getMinX(), box.getRect().getMinY()),
+                    origin.getOrientation());
+            if (!sampleRoboStaticCollision(temp)) {
+                posRobo.add(temp);
+            }
+            // Bottom right
+            temp = new RobotConfig(
+                    new Point2D.Double(box.getRect().getMaxX(), box.getRect().getMinY()),
+                    origin.getOrientation());
+            if (!sampleRoboStaticCollision(temp)) {
+                posRobo.add(temp);
+            }
+            // Top left
+            temp = new RobotConfig(
+                    new Point2D.Double(box.getRect().getMinX(), box.getRect().getMaxY()),
+                    origin.getOrientation());
+            if (!sampleRoboStaticCollision(temp)) {
+                posRobo.add(temp);
+            }
+            // Top right
+            temp = new RobotConfig(
+                    new Point2D.Double(box.getRect().getMaxX(), box.getRect().getMinY()),
+                    origin.getOrientation());
+            if (!sampleRoboStaticCollision(temp)) {
+                posRobo.add(temp);
+            }
+        }
+
         return posRobo;
     }
 
@@ -324,7 +388,8 @@ public class Sampler {
         Point2D bestDockPos = center;
 
         for(Point2D pos : dockPos){
-            Rectangle2D proj = new Rectangle2D.Double(pos.getX(), pos.getY(), mb.getWidth(), mb.getWidth());
+//            Rectangle2D proj = new Rectangle2D.Double(pos.getX(), pos.getY(), mb.getWidth(), mb.getWidth());
+            Rectangle2D proj = new Rectangle2D.Double(pos.getX() - roboWidth/2, pos.getY() - roboWidth/2, -roboWidth, roboWidth);
             if(!staticCollision(proj) && pos.distance(rc.getPos()) < dist){
                 dist = pos.distance(rc.getPos());
                 bestDockPos = pos;
@@ -1623,7 +1688,7 @@ public class Sampler {
     private List<RobotConfig> pathBot(RobotConfig start, Set<RobotConfig> samples, Box focus) {
         // Initialise all the queues and sets to run the search
         Set<RoboPos> queue = new HashSet<>();
-        Set<Point2D> visited = new HashSet<>();
+        Set<RobotConfig> visited = new HashSet<>();
 
         Point2D end = focus.getDockPos();
 //        System.out.println("goal: " + end.getX() + ", " + end.getY());
@@ -1650,14 +1715,14 @@ public class Sampler {
                     + " \tsum: " + (current.getWeight() + current.getHeuristic()));
 
             queue.remove(current);
-            visited.add(current.getRobo().getPos());
+            visited.add(current.getRobo());
 
             if (end.equals(current.getRobo().getPos())) {
                 break;
             }
 
             for (RobotConfig rb : getRoboNeighbours(samples, current.getRobo(), focus)) {
-                if (visited.contains(rb.getPos()) || current.getRobo().equals(rb)) {
+                if (visited.contains(rb) || current.getRobo().equals(rb)) {
                     continue;
                 }
 
