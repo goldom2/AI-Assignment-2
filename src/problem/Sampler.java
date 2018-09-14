@@ -499,103 +499,104 @@ public class Sampler {
     }
 
 
-    public List<State> sideRotate(State state, int face1, int face2, double halfWidth){
+    public List<State> sideRotate(State state, int face1, int face2, double halfBox){
         List<State> path = new ArrayList<>();
 
         if(face1 == 1){ //Top
             if(face2 == 2){ // Right
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, false));
-                path.addAll(rotateBot(270, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(state, halfBox, 1, false));
+                path.addAll(rotateBot(270, path.get(path.size() - 1), false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, true));
             }
             else { //Left
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
+                path.addAll(refaceRobotTransition(state, halfBox, -1, false));
                 path.addAll(rotateBot(90, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, true));
             }
         }
         else if(face1 == 2){ // Right
             if(face2 == 1){ // Top
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
+                path.addAll(refaceRobotTransition(state, halfBox, 1, true));
                 path.addAll(rotateBot(360, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, false));
             }
             else{ // Bottom
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(state, halfBox, -1, true));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, false));
             }
         }
         else if(face1 == 3){ // Bottom
             if(face2 == 2){ // Right
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, false));
+                path.addAll(refaceRobotTransition(state, halfBox, 1, false));
                 path.addAll(rotateBot(270, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, true));
             }
             else{ // Left
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
+                path.addAll(refaceRobotTransition(state, halfBox, -1, false));
                 path.addAll(rotateBot(90, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, true));
             }
         }
         else if(face1 == 4){ // Left
             if(face2 == 3){ //Bottom
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(state, halfBox, -1, true));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, false));
             }
             else{ // Top
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
+                path.addAll(refaceRobotTransition(state, halfBox, 1, true));
                 path.addAll(rotateBot(0, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, false));
             }
         }
         return path;
     }
 
-    public List<State> backRotate(State state, int face1, int face2, double halfWidth){
+    public List<State> backRotate(State state, int face1, int face2, double halfBox){
         List<State> path = new ArrayList<>();
+        double halfWidth = this.roboWidth / 2;
 
         if(face1 == 1){ //Top
             if(face2 == 2){ // Right
                 path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
                 path.addAll(rotateBot(270, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth * 2, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth + halfBox, -1, true));
             }
             else { //Left
                 path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
                 path.addAll(rotateBot(90, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth * 2, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth + halfBox, -1, true));
             }
         }
         else if(face1 == 2){ // Right
             if(face2 == 1){ // Top
                 path.addAll(refaceRobotTransition(state, halfWidth, 1, false));
                 path.addAll(rotateBot(0, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth * 2, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth + halfBox, -1, false));
             }
             else{ // Bottom
                 path.addAll(refaceRobotTransition(state, halfWidth, 1, false));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth * 2, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth + halfBox, -1, false));
             }
         }
         else if(face1 == 3){ // Bottom
             if(face2 == 2){ // Right
                 path.addAll(refaceRobotTransition(state, halfWidth, -1, true));
                 path.addAll(rotateBot(270, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth * 2, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth + halfBox, 1, true));
             }
             else{ // Left
                 path.addAll(refaceRobotTransition(state, halfWidth, -1, true));
                 path.addAll(rotateBot(90, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth * 2, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth + halfBox, 1, true));
             }
         }
         else if(face1 == 4){ // Left
@@ -603,75 +604,76 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth * 2, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth + halfBox, 1, false));
             }
             else{ // Top
                 path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
                 path.addAll(rotateBot(0, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth * 2, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth + halfBox, 1, false));
             }
         }
         return path;
     }
 
-    public List<State> nextRotate(State state, int face1, int face2, double halfWidth){
+    public List<State> nextRotate(State state, int face1, int face2, double halfBox){
         List<State> path = new ArrayList<>();
+        double halfWidth = this.roboWidth / 2;
 
         if(face1 == 1){ //Top
             if(face2 == 2){ // Right
-                path.addAll(refaceRobotTransition(state, halfWidth * 2, 1, false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, true));
                 path.addAll(rotateBot(270, path.get(path.size() - 1), false));
                 path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
 
 
             }
             else { //Left
-                path.addAll(refaceRobotTransition(state, halfWidth * 2, -1, false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, true));
                 path.addAll(rotateBot(90, path.get(path.size() - 1), true));
                 path.addAll(refaceRobotTransition(state, halfWidth, 1, false));
             }
         }
         else if(face1 == 2){ // Right
             if(face2 == 1){ // Top
-                path.addAll(refaceRobotTransition(state, halfWidth * 2, 1, true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
+                path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, false));
                 path.addAll(rotateBot(0, path.get(path.size() - 1), true));
                 path.addAll(refaceRobotTransition(state, halfWidth, -1, true));
             }
             else{ // Bottom
-                path.addAll(refaceRobotTransition(state, halfWidth * 2, -1, true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
+                path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, false));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), false));
                 path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
             }
         }
         else if(face1 == 3){ // Bottom
             if(face2 == 2){ // Right
-                path.addAll(refaceRobotTransition(state, halfWidth * 2, 1, false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, true));
+                path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, true));
                 path.addAll(rotateBot(270, path.get(path.size() - 1), true));
                 path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
             }
             else{ // Left
-                path.addAll(refaceRobotTransition(state, halfWidth * 2, -1, false));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, true));
+                path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, true));
                 path.addAll(rotateBot(90, path.get(path.size() - 1), true));
                 path.addAll(refaceRobotTransition(state, halfWidth, 1, false));
             }
         }
         else if(face1 == 4){ // Left
             if(face2 == 3){ //Bottom
-                path.addAll(refaceRobotTransition(state, halfWidth * 2, -1, true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, false));
+                path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, false));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), true));
                 path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
             }
             else{ // Top
-                path.addAll(refaceRobotTransition(state, halfWidth * 2, 1, true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, false));
+                path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, false));
                 path.addAll(rotateBot(0, path.get(path.size() - 1), false));
                 path.addAll(refaceRobotTransition(state, halfWidth, -1, true));
             }
@@ -687,8 +689,8 @@ public class Sampler {
         int intFace = 0;
         int method;
         int method2;
-        double width = this.roboWidth;
-        double halfWidth = width / 2;
+        double boxWidth = prev.getWidth();
+        double halfWidth = boxWidth/2;
         double deltaX;
         double deltaY;
         double x;
@@ -793,10 +795,8 @@ public class Sampler {
             }
         }
 
-
         if(intFace == 0){
-            method = checkRotation(state, face1, face2, center.getX(), center.getY());
-//            System.out.println("method: " + method);
+            method = checkRotation(state, face1, face2, center.getX(), center.getY(), boxWidth);
             if(method ==1){
                 path.addAll(sideRotate(state, face1, face2, halfWidth));
             }
@@ -807,14 +807,13 @@ public class Sampler {
                 path.addAll(nextRotate(state, face1, face2, halfWidth));
             }
             if(method == 0){
-//                System.out.println("Shit");
+                System.out.println("Shit");
             }
 
         }
         else{
-//            System.out.println("Switch");
-            method = checkRotation(state, face1, intFace, center.getX(), center.getY());
-            method2 = checkRotation(state, intFace, face2, center.getX(), center.getY());
+            method = checkRotation(state, face1, intFace, center.getX(), center.getY(), boxWidth);
+            method2 = checkRotation(state, intFace, face2, center.getX(), center.getY(), boxWidth);
             if(method == 0 || method2 == 0){
                 if(intFace == 2){
                     intFace = 4;
@@ -822,8 +821,8 @@ public class Sampler {
                 else{
                     intFace = 1;
                 }
-                method = checkRotation(state, face1, intFace, center.getX(), center.getY());
-                method2 = checkRotation(state, intFace, face2, center.getX(), center.getY());
+                method = checkRotation(state, face1, intFace, center.getX(), center.getY(), boxWidth);
+                method2 = checkRotation(state, intFace, face2, center.getX(), center.getY(), boxWidth);
             }
             if(method ==1){
                 path.addAll(sideRotate(state, face1, intFace, halfWidth));
@@ -835,7 +834,6 @@ public class Sampler {
                 path.addAll(nextRotate(state, face1, intFace, halfWidth));
             }
 
-            System.out.println("method2: " + method2);
             State update = path.get(path.size() - 1);
 
             if(method2 ==1){
@@ -877,7 +875,7 @@ public class Sampler {
 
         for(MovingBox box : movingboxes){
             if(box.getRect().intersects(rect)){
-                System.out.println("box");
+//                System.out.println("box");
                 return false;
             }
         }
@@ -886,81 +884,64 @@ public class Sampler {
         return true;
     }
 
-    public boolean checkSide(State state, double halfWidth, double centX, double centY, int side){
+    public boolean checkSide(State state, double halfWidth, double halfBox, double centX, double centY, int side){
         double x;
         double y;
 
         if(side == 1){
             x = centX - halfWidth;
-            y = centY + halfWidth;
+            y = centY + halfBox;
         }
         else if(side == 2){
-            x = centX + halfWidth;
+            x = centX + halfBox;
             y = centY - halfWidth;
         }
         else if(side == 3){
             x = centX - halfWidth;
-            y = centY - (3 * halfWidth);
+            y = centY - halfBox - (2 * halfWidth);
         }
         else{
-            x = centX - (3 * halfWidth);
+            x = centX - halfBox - (2 * halfWidth);
             y = centY - halfWidth;
         }
         return checkRect(state, x, y, halfWidth * 2, halfWidth * 2);
     }
 
 
-    public int checkRotation(State state, int face1, int face2, double X, double Y){
+    public int checkRotation(State state, int face1, int face2, double X, double Y, double boxWidth){
         // 1 Top, 2 Right, 3 Bottom, 4 Left
 //        System.out.println("Face 1: " + face1 + ", Face 2: " +face2);
         double width = this.roboWidth;
         double halfWidth = width / 2;
-        RobotConfig cur = state.getRobo();
-        double y;
-        double x;
-        double centX;
-        double centY;
+        double halfBox = boxWidth / 2;
+        double x1;
+        double y1;
 
-        if(face1 == 1){
-            x = X;
-            y = Y + halfWidth;
-        }
-        else if(face1 == 2){
-            x = X + halfWidth;
-            y = Y;
-        }
-        else if(face1 == 3){
-            x = X;
-            y = Y - halfWidth;
-        }
-        else{
-            x = X - halfWidth;
-            y = Y;
-        }
         //Top
         //Top left
         if((face1 == 1 && face2 == 4) ||(face2 == 1 && face1 == 4) ){
-            x = x - halfWidth;
-            if(checkRect(state, x, y, halfWidth, halfWidth)){
-                y = y - halfWidth;
-                x = x - halfWidth;
-                if(checkRect(state, x, y, halfWidth, halfWidth)){
+            x1 = X - halfWidth - halfBox;
+            y1 = Y + (halfBox - halfWidth);
+            if(checkRect(state, x1, y1, halfWidth, halfWidth)){
+                y1 = y1 + halfWidth;
+                x1 = x1 + halfWidth;
+                if(checkRect(state, x1, y1, halfWidth, halfWidth)){
                     return 1;
                 }
             }
             if(face1 == 1){
-                if(checkSide(state, halfWidth, X, Y, face1)){
+                if(checkSide(state, halfWidth, halfBox, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, X, Y, face2)){
+                else if(checkSide(state, halfWidth, halfBox, X, Y, face2)){
                     return 3;
                 }
             }
             else{
-                if(checkSide(state, halfWidth, X, Y, face1)){
+                if(checkSide(state, halfWidth, halfBox, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, X, Y, face2)){
+                else if(checkSide(state, halfWidth, halfBox, X, Y, face2)){
                     return 3;
                 }
 
@@ -970,26 +951,28 @@ public class Sampler {
         }
         //Top right
         else if((face1 == 1 && face2 == 2)||(face2 == 1 && face1 == 2)){
-            if(checkRect(state, x, y, halfWidth, halfWidth)){
-                y = y - halfWidth;
-                x = x + halfWidth;
-                if(checkRect(state, x, y, halfWidth, halfWidth)){
+            y1 = Y + halfBox;
+            x1 = X + (halfBox - halfWidth);
+            if(checkRect(state, x1, y1, halfWidth, halfWidth)){
+                y1 = y1 - halfWidth;
+                x1 = x1 + halfWidth;
+                if(checkRect(state, x1, y1, halfWidth, halfWidth)){
                     return 1;
                 }
             }
             if(face1 == 1){
-                if(checkSide(state, halfWidth, X, Y, face1)){
+                if(checkSide(state, halfWidth, halfBox, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, X, Y, face2)){
+                else if(checkSide(state, halfWidth, halfBox, X, Y, face2)){
                     return 3;
                 }
             }
             else{
-                if(checkSide(state, halfWidth, X, Y, face1)){
+                if(checkSide(state, halfWidth, halfBox, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, X, Y, face2)){
+                else if(checkSide(state, halfWidth, halfBox, X, Y, face2)){
                     return 3;
                 }
 
@@ -1001,28 +984,28 @@ public class Sampler {
         //Bottom
         //Bottom left
         else if((face1 == 3 && face2 == 4)||(face2 == 3 && face1 ==4 )){
-            y = y - halfWidth;
-            x = x - halfWidth;
-            if(checkRect(state, x, y, halfWidth, halfWidth)){
-                y = y + halfWidth;
-                x = x - halfWidth;
-                if(checkRect(state, x, y, halfWidth, halfWidth)){
+            y1 = Y - halfBox - halfWidth;
+            x1 = X - halfBox;
+            if(checkRect(state, x1, y1, halfWidth, halfWidth)){
+                y1 = y1 + halfWidth;
+                x1 = x1 - halfWidth;
+                if(checkRect(state, x1, y1, halfWidth, halfWidth)){
                     return 1;
                 }
             }
             if(face1 == 3){
-                if(checkSide(state, halfWidth, X, Y, face1)){
+                if(checkSide(state, halfWidth, halfBox, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, X, Y, face2)){
+                else if(checkSide(state, halfWidth, halfBox, X, Y, face2)){
                     return 3;
                 }
             }
             else{
-                if(checkSide(state, halfWidth, X, Y, face1)){
+                if(checkSide(state, halfWidth, halfBox, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, X, Y, face2)){
+                else if(checkSide(state, halfWidth, halfBox, X, Y, face2)){
                     return 3;
                 }
 
@@ -1033,27 +1016,28 @@ public class Sampler {
         }
         //Bottom right
         else if((face1 == 3 && face2 == 2)||(face2 == 3 && face1 == 2)){
-            y = y - halfWidth;
-            if(checkRect(state, x, y, halfWidth, halfWidth)){
-                y = y + halfWidth;
-                x = x + halfWidth;
-                if(checkRect(state, x, y, halfWidth, halfWidth)){
+            y1 = Y - halfBox - halfWidth;
+            x1 = X + (halfBox - halfWidth);
+            if(checkRect(state, x1, y1, halfWidth, halfWidth)){
+                y1 = y1 + halfWidth;
+                x1 = x1 + halfWidth;
+                if(checkRect(state, x1, y1, halfWidth, halfWidth)){
                     return 1;
                 }
             }
             if(face1 == 3){
-                if(checkSide(state, halfWidth, X, Y, face1)){
+                if(checkSide(state, halfWidth, halfBox, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, X, Y, face2)){
+                else if(checkSide(state, halfWidth, halfBox, X, Y, face2)){
                     return 3;
                 }
             }
             else{
-                if(checkSide(state, halfWidth, X, Y, face1)){
+                if(checkSide(state, halfWidth, halfBox, X, Y, face1)){
                     return 2;
                 }
-                else if(checkSide(state, halfWidth, X, Y, face2)){
+                else if(checkSide(state, halfWidth, halfBox, X, Y, face2)){
                     return 3;
                 }
 
