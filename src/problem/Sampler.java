@@ -349,6 +349,38 @@ public class Sampler {
      * @param box
      * @return
      */
+    public boolean roboCollision(Rectangle2D box, State state) {
+        for (StaticObstacle so : staticObstacles) {
+            if (box.intersects(so.getRect())) {
+                return true;
+            }
+        }
+
+        for (MovingObstacle mo : state.getMovingObstacles()) {
+            if (box.intersects(mo.getRect())) {
+                return true;
+            }
+        }
+
+        for (MovingBox mb : state.getMovingBoxes()) {
+            if (box.intersects(mb.getRect())) {
+                return true;
+            }
+        }
+
+        Rectangle2D board = new Rectangle2D.Double(0, 0, 1, 1);
+        if (!board.contains(box)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if the given Rectangle collides with any static obstacles or the edge of the board
+     *
+     * @param box
+     * @return
+     */
     public boolean staticCollision(Rectangle2D box) {
         for (StaticObstacle so : staticObstacles) {
             if (box.intersects(so.getRect())) {
@@ -1246,7 +1278,7 @@ public class Sampler {
     private boolean addBuildStepsToPath(List<State> path, Box init, Box goal, Set<Rectangle2D> noGoalZones, int index) {
         Rectangle2D union = init.getRect().createUnion(goal.getRect());
         noGoalZones.add(union);
-        boolean obstacle = false;
+
         int thisIndex;
         if (init instanceof MovingBox) {
             thisIndex = path.get(path.size() - 1).getMovingBoxes().indexOf(init);
@@ -1264,33 +1296,20 @@ public class Sampler {
             }
         }
 
-
+        boolean obstacle = false;
         for (MovingObstacle mo : path.get(path.size() - 1).getMovingObstacles()) {
+            System.out.println("Checking for collisions with MovingObstacle: " + mo.toString());
             obstacle = obstacle || moveObstacle(path, union, noGoalZones, init, mo, index);
         }
         for (MovingBox mb : path.get(path.size() - 1).getMovingBoxes()) {
+            System.out.println("Checking for collisions with MovingBox: " + mb.toString());
             obstacle = obstacle || moveObstacle(path, union, noGoalZones, init, mb, index);
         }
-
-//        if (box in question has moved) {
-//            pathBox(back to where it is expected to be);
-//        }
-//        OR
-//                return "It moves"; which causes the loop above to break;
-//        Note will have to loop over boxes to ensure they didn't move an already checked box into the way
 
         if (obstacle) {
             if (init instanceof MovingBox) {
                 if (!path.get(path.size() - 1).getMovingBoxes().get(thisIndex).equals(init)) {
                     return true;
-//                    if (thisIndex == index) {
-//                        MovingBox box = path.get(path.size() - 1).getMovingBoxes().get(index);
-//                        Set<Box> nodes = sampleNewState(box);
-//                        nodes.add(init);
-//                        pathBox(box, init, nodes, path, noGoalZones, index);
-//                    } else {
-//                        return true;
-//                    }
                 }
             } else {
                 if (!path.get(path.size() - 1).getMovingObstacles().get(thisIndex).equals(init)) {
@@ -1328,23 +1347,27 @@ public class Sampler {
     }
 
     private boolean moveObstacle(List<State> path, Rectangle2D union, Set<Rectangle2D> noGoalZones, Box init, Box box, int index) {
-        if (box.getRect().intersects(union) && !box.equals(init)) {
-            System.out.println("Oh my it appears there's a MovingBox in our path");
-            Set<Box> nodes = sampleNewState(box);
-            Box target = chooseGoalNode(nodes, noGoalZones);
-            if (target == null) {
-                System.out.println("Could not decide upon a goal node");
-            }
-            System.out.println("Time to move it");
-            pathBox(box, target, nodes, path, noGoalZones, index);
-            System.out.println("At least I can path it haha");
+        System.out.println("The Union is " + union.toString());
+        if (box.getRect().intersects(union) ) {//&& System.out.println("It intersects") && !box.equals(init)) {
+            System.out.println("It intersects");
+            if (!box.equals(init)) {
+                System.out.println("Oh my it appears there's a " + ((box instanceof MovingBox) ? "MovingBox" : "MovingObstacle") + " in our path");
+                Set<Box> nodes = sampleNewState(box);
+                Box target = chooseGoalNode(nodes, noGoalZones);
+                if (target == null) {
+                    System.out.println("Could not decide upon a goal node");
+                }
+                System.out.println("Time to move it");
+                pathBox(box, target, nodes, path, noGoalZones, index);
+                System.out.println("At least I can path it haha");
 
 //            Point2D robDockPos = findDock(init, path.get(path.size() - 1).getRobo());
 //            posRoboConfig.add( new RobotConfig(robDockPos, 0));
 //            init.setDockPos(robDockPos);
 //            path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
 //            System.out.println("And I can make it back home yay");
-            return true;
+                return true;
+            }
         }
         return false;
     }
@@ -1361,7 +1384,7 @@ public class Sampler {
 //            }
 //        }
 
-        List<RobotConfig> rp = pathBot(cur, samples, focus);
+        List<RobotConfig> rp = pathBot(cur, samples, focus, prev);
 
         RobotConfig last = cur;
         State curState;
@@ -1369,7 +1392,7 @@ public class Sampler {
 
         for(RobotConfig r : rp) {
 
-            RobotConfig intermediate = validatePath(last.getPos(), r.getPos(), focus);
+            RobotConfig intermediate = validatePath(last.getPos(), r.getPos(), prev);
 
 //            System.out.println("-->" +last.getPos().getX() + ", " + last.getPos().getY());
 //            System.out.println(intermediate.getPos().getX() + ", " + intermediate.getPos().getY());
@@ -1384,13 +1407,17 @@ public class Sampler {
             curState =  path.get(path.size() - 1);
             path.addAll(rotateBot(intermediate.getOrientation() * (180/Math.PI), curState, cc));
 
+            System.out.println("pre angle: " + intermediate.getOrientation() * (180/Math.PI));
+
             curState =  path.get(path.size() - 1);
             path.addAll(moveBot(intermediate.getPos(), curState));
 
             cc = (last.getOrientation() < intermediate.getOrientation());
 
             curState =  path.get(path.size() - 1);
-            path.addAll(rotateBot(r.getOrientation() * (180/Math.PI), curState, cc));
+            path.addAll(rotateBot(Math.abs(intermediate.getOrientation() - Math.PI/2) * (180/Math.PI), curState, cc));
+
+            System.out.println("post angle: " + r.getOrientation() * (180/Math.PI));
 
             curState =  path.get(path.size() - 1);
             path.addAll(moveBot(r.getPos(), curState));
@@ -1701,7 +1728,7 @@ public class Sampler {
         return result;
     }
 
-    public RobotConfig validatePath(Point2D start, Point2D end, Box focus){
+    public RobotConfig validatePath(Point2D start, Point2D end, State state){
         //        |----
         // Path 1 |
 
@@ -1714,7 +1741,7 @@ public class Sampler {
 
 //        System.out.println("intersects with y aixs: " + !l0.intersects(focus.getRect()));
 
-        if (!lineIntoStatic(l1) && !lineIntoStatic(l2) && !staticCollision(intermediatePos)) {
+        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !roboCollision(intermediatePos, state)) {
 
             return new RobotConfig(p, Math.PI/2);
         }
@@ -1722,7 +1749,7 @@ public class Sampler {
         //            |
         // Path 2 ----|
 
-        p = new Point2D.Double(start.getX(), end.getY());
+        p = new Point2D.Double(end.getX(), start.getY());
 
         l1 = new Line2D.Double(start, p);
         l2 = new Line2D.Double(p, end);
@@ -1731,7 +1758,7 @@ public class Sampler {
 
 //        System.out.println("intersects with x aixs: " + l0.intersects(focus.getRect()));
 
-        if (!lineIntoStatic(l1) && !lineIntoStatic(l2) && !staticCollision(intermediatePos)) {
+        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !roboCollision(intermediatePos, state)) {
 
             return new RobotConfig(p, 0);
         }
@@ -1740,18 +1767,18 @@ public class Sampler {
     }
 
 
-    public Set<RobotConfig> getRoboNeighbours(Set<RobotConfig> samples, RobotConfig cur, Box focus) {
+    public Set<RobotConfig> getRoboNeighbours(Set<RobotConfig> samples, RobotConfig cur, State state) {
         Set<RobotConfig> neighbours = new HashSet<>();
 
         for(RobotConfig rb : samples){
-            if(validatePath(cur.getPos(), rb.getPos(), focus) != null){
+            if(validatePath(cur.getPos(), rb.getPos(), state) != null){
                 neighbours.add(rb);
             }
         }
         return neighbours;
     }
 
-    private List<RobotConfig> pathBot(RobotConfig start, Set<RobotConfig> samples, Box focus) {
+    private List<RobotConfig> pathBot(RobotConfig start, Set<RobotConfig> samples, Box focus, State state) {
         // Initialise all the queues and sets to run the search
         Set<RoboPos> queue = new HashSet<>();
         Set<RobotConfig> visited = new HashSet<>();
@@ -1787,7 +1814,7 @@ public class Sampler {
                 break;
             }
 
-            for (RobotConfig rb : getRoboNeighbours(samples, current.getRobo(), focus)) {
+            for (RobotConfig rb : getRoboNeighbours(samples, current.getRobo(), state)) {
                 if (visited.contains(rb) || current.getRobo().equals(rb)) {
                     continue;
                 }
@@ -1881,7 +1908,20 @@ public class Sampler {
                 .doubleValue();
     }
 
-    private boolean lineIntoStatic(Line2D path){
+    private boolean lineIntoStatic(Line2D path, State state){
+
+        for(MovingBox mb : state.getMovingBoxes()){
+            if(path.intersects(mb.getRect())){
+                return true;
+            }
+        }
+
+        for(MovingObstacle mo : state.getMovingObstacles()){
+            if(path.intersects(mo.getRect())){
+                return true;
+            }
+        }
+
         for(StaticObstacle so : staticObstacles){
             if(path.intersects(so.getRect())){
                 return true;
