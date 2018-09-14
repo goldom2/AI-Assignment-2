@@ -1214,7 +1214,7 @@ public class Sampler {
 //            }
 //        }
 
-        List<RobotConfig> rp = pathBot(cur, samples, focus);
+        List<RobotConfig> rp = pathBot(cur, samples, focus, prev);
 
         RobotConfig last = cur;
         State curState;
@@ -1222,7 +1222,7 @@ public class Sampler {
 
         for(RobotConfig r : rp) {
 
-            RobotConfig intermediate = validatePath(last.getPos(), r.getPos(), focus);
+            RobotConfig intermediate = validatePath(last.getPos(), r.getPos(), prev);
 
 //            System.out.println("-->" +last.getPos().getX() + ", " + last.getPos().getY());
 //            System.out.println(intermediate.getPos().getX() + ", " + intermediate.getPos().getY());
@@ -1242,11 +1242,23 @@ public class Sampler {
 
             cc = (last.getOrientation() < intermediate.getOrientation());
 
-            curState =  path.get(path.size() - 1);
-            path.addAll(rotateBot(r.getOrientation() * (180/Math.PI), curState, cc));
+            if(r.getOrientation() != Math.PI/2 && r.getPos().getY() != intermediate.getPos().getY()){
+                curState =  path.get(path.size() - 1);
+                path.addAll(rotateBot(0, curState, cc));
+
+            }else if(r.getOrientation() != 0 && r.getPos().getX() != intermediate.getPos().getX()){
+                curState =  path.get(path.size() - 1);
+                path.addAll(rotateBot(Math.PI/2, curState, cc));
+
+            }
 
             curState =  path.get(path.size() - 1);
             path.addAll(moveBot(r.getPos(), curState));
+
+            cc = (last.getOrientation() < intermediate.getOrientation());
+
+            curState =  path.get(path.size() - 1);
+            path.addAll(rotateBot(r.getOrientation() * (180/Math.PI), curState, cc));
 
             last = r;
         }
@@ -1554,7 +1566,7 @@ public class Sampler {
         return result;
     }
 
-    public RobotConfig validatePath(Point2D start, Point2D end, Box focus){
+    public RobotConfig validatePath(Point2D start, Point2D end, State state){
         //        |----
         // Path 1 |
 
@@ -1567,7 +1579,7 @@ public class Sampler {
 
 //        System.out.println("intersects with y aixs: " + !l0.intersects(focus.getRect()));
 
-        if (!lineIntoStatic(l1) && !lineIntoStatic(l2) && !staticCollision(intermediatePos)) {
+        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !staticCollision(intermediatePos)) {
 
             return new RobotConfig(p, Math.PI/2);
         }
@@ -1584,7 +1596,7 @@ public class Sampler {
 
 //        System.out.println("intersects with x aixs: " + l0.intersects(focus.getRect()));
 
-        if (!lineIntoStatic(l1) && !lineIntoStatic(l2) && !staticCollision(intermediatePos)) {
+        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !staticCollision(intermediatePos)) {
 
             return new RobotConfig(p, 0);
         }
@@ -1593,18 +1605,18 @@ public class Sampler {
     }
 
 
-    public Set<RobotConfig> getRoboNeighbours(Set<RobotConfig> samples, RobotConfig cur, Box focus) {
+    public Set<RobotConfig> getRoboNeighbours(Set<RobotConfig> samples, RobotConfig cur, State state) {
         Set<RobotConfig> neighbours = new HashSet<>();
 
         for(RobotConfig rb : samples){
-            if(validatePath(cur.getPos(), rb.getPos(), focus) != null){
+            if(validatePath(cur.getPos(), rb.getPos(), state) != null){
                 neighbours.add(rb);
             }
         }
         return neighbours;
     }
 
-    private List<RobotConfig> pathBot(RobotConfig start, Set<RobotConfig> samples, Box focus) {
+    private List<RobotConfig> pathBot(RobotConfig start, Set<RobotConfig> samples, Box focus, State state) {
         // Initialise all the queues and sets to run the search
         Set<RoboPos> queue = new HashSet<>();
         Set<Point2D> visited = new HashSet<>();
@@ -1627,11 +1639,11 @@ public class Sampler {
             }
 
             current = getNextRobo(queue);
-            System.out.println("size: " + queue.size() + "  \tcur pos: "
-                    + current.getRobo().getPos().getX() + ", " + current.getRobo().getPos().getY()
-                    + "  \tcur weight: " + current.getWeight()
-                    + " \theuristic: " + current.getHeuristic()
-                    + " \tsum: " + (current.getWeight() + current.getHeuristic()));
+//            System.out.println("size: " + queue.size() + "  \tcur pos: "
+//                    + current.getRobo().getPos().getX() + ", " + current.getRobo().getPos().getY()
+//                    + "  \tcur weight: " + current.getWeight()
+//                    + " \theuristic: " + current.getHeuristic()
+//                    + " \tsum: " + (current.getWeight() + current.getHeuristic()));
 
             queue.remove(current);
             visited.add(current.getRobo().getPos());
@@ -1640,7 +1652,7 @@ public class Sampler {
                 break;
             }
 
-            for (RobotConfig rb : getRoboNeighbours(samples, current.getRobo(), focus)) {
+            for (RobotConfig rb : getRoboNeighbours(samples, current.getRobo(), state)) {
                 if (visited.contains(rb.getPos()) || current.getRobo().equals(rb)) {
                     continue;
                 }
@@ -1734,7 +1746,20 @@ public class Sampler {
                 .doubleValue();
     }
 
-    private boolean lineIntoStatic(Line2D path){
+    private boolean lineIntoStatic(Line2D path, State state){
+
+        for(MovingBox mb : state.getMovingBoxes()){
+            if(path.intersects(mb.getRect())){
+                return true;
+            }
+        }
+
+        for(MovingObstacle mo : state.getMovingObstacles()){
+            if(path.intersects(mo.getRect())){
+                return true;
+            }
+        }
+
         for(StaticObstacle so : staticObstacles){
             if(path.intersects(so.getRect())){
                 return true;
