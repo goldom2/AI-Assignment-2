@@ -1096,8 +1096,6 @@ public class Sampler {
         Point2D robDockPos = findDock(box, path.get(path.size() - 1).getRobo());
         posRoboConfig.add(new RobotConfig(robDockPos, 0));
         box.setDockPos(robDockPos);
-
-        //
         path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, box));
 
         System.out.println("Connected to box yay");
@@ -1166,8 +1164,7 @@ public class Sampler {
                 Point2D robDockPos = findDock(init, path.get(path.size() - 1).getRobo());
                 posRoboConfig.add(new RobotConfig(robDockPos, 0));
                 init.setDockPos(robDockPos);
-
-//                path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
+                path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
                 System.out.println("And I can make it back home yay");
             }
         }
@@ -1176,20 +1173,16 @@ public class Sampler {
                 System.out.println("Oh my it appears there's a MovingBox in our path");
                 Set<Box> nodes = sampleNewState(mb);
                 Box target = chooseGoalNode(nodes, union);
-
                 if (target == null) {
                     System.out.println("Could not decide upon a goal node");
                 }
-
                 System.out.println("Time to move it");
                 pathBox(mb, target, nodes, path);
                 System.out.println("At least I can path it haha");
-
                 Point2D robDockPos = findDock(init, path.get(path.size() - 1).getRobo());
                 posRoboConfig.add( new RobotConfig(robDockPos, 0));
                 init.setDockPos(robDockPos);
-
-//                path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
+                path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
                 System.out.println("And I can make it back home yay");
             }
         }
@@ -1198,8 +1191,8 @@ public class Sampler {
         State step;
         Box last = init;
         for(Box sStep : buildStep(init, goal)){
-//            state = path.get(path.size() - 1);
-//            path.addAll(refaceRobot(last, sStep, state));
+            state = path.get(path.size() - 1);
+            path.addAll(refaceRobot(last, sStep, state));
 
             state = path.get(path.size() - 1);
             step = createNewState(state, sStep, last);
@@ -1221,7 +1214,7 @@ public class Sampler {
 //            }
 //        }
 
-        List<RobotConfig> rp = pathBot(cur, samples, focus, prev);
+        List<RobotConfig> rp = pathBot(cur, samples, focus);
 
         RobotConfig last = cur;
         State curState;
@@ -1229,7 +1222,7 @@ public class Sampler {
 
         for(RobotConfig r : rp) {
 
-            RobotConfig intermediate = validatePath(last.getPos(), r.getPos(), prev, focus);
+            RobotConfig intermediate = validatePath(last.getPos(), r.getPos(), focus);
 
 //            System.out.println("-->" +last.getPos().getX() + ", " + last.getPos().getY());
 //            System.out.println(intermediate.getPos().getX() + ", " + intermediate.getPos().getY());
@@ -1561,7 +1554,7 @@ public class Sampler {
         return result;
     }
 
-    public RobotConfig validatePath(Point2D start, Point2D end, State state, Box focus){
+    public RobotConfig validatePath(Point2D start, Point2D end, Box focus){
         //        |----
         // Path 1 |
 
@@ -1574,7 +1567,7 @@ public class Sampler {
 
 //        System.out.println("intersects with y aixs: " + !l0.intersects(focus.getRect()));
 
-        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !staticCollision(intermediatePos)) {
+        if (!lineIntoStatic(l1) && !lineIntoStatic(l2) && !staticCollision(intermediatePos)) {
 
             return new RobotConfig(p, Math.PI/2);
         }
@@ -1591,7 +1584,7 @@ public class Sampler {
 
 //        System.out.println("intersects with x aixs: " + l0.intersects(focus.getRect()));
 
-        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !staticCollision(intermediatePos)) {
+        if (!lineIntoStatic(l1) && !lineIntoStatic(l2) && !staticCollision(intermediatePos)) {
 
             return new RobotConfig(p, 0);
         }
@@ -1600,18 +1593,18 @@ public class Sampler {
     }
 
 
-    public Set<RobotConfig> getRoboNeighbours(Set<RobotConfig> samples, RobotConfig cur, Box focus, State state) {
+    public Set<RobotConfig> getRoboNeighbours(Set<RobotConfig> samples, RobotConfig cur, Box focus) {
         Set<RobotConfig> neighbours = new HashSet<>();
 
         for(RobotConfig rb : samples){
-            if(validatePath(cur.getPos(), rb.getPos(), state, focus) != null){
+            if(validatePath(cur.getPos(), rb.getPos(), focus) != null){
                 neighbours.add(rb);
             }
         }
         return neighbours;
     }
 
-    private List<RobotConfig> pathBot(RobotConfig start, Set<RobotConfig> samples, Box focus, State state) {
+    private List<RobotConfig> pathBot(RobotConfig start, Set<RobotConfig> samples, Box focus) {
         // Initialise all the queues and sets to run the search
         Set<RoboPos> queue = new HashSet<>();
         Set<Point2D> visited = new HashSet<>();
@@ -1647,7 +1640,7 @@ public class Sampler {
                 break;
             }
 
-            for (RobotConfig rb : getRoboNeighbours(samples, current.getRobo(), focus, state)) {
+            for (RobotConfig rb : getRoboNeighbours(samples, current.getRobo(), focus)) {
                 if (visited.contains(rb.getPos()) || current.getRobo().equals(rb)) {
                     continue;
                 }
@@ -1678,6 +1671,21 @@ public class Sampler {
         }
 
         return botPath;
+    }
+
+    private boolean abridgedContains(Set<Point2D> nodes, Point2D target){
+
+        for(Point2D node : nodes){
+//            System.out.println("x: " + node.getX() + " - " + target.getX()+ "\ty: " + node.getX() + " - " + target.getY());
+
+            if(node.getX() == target.getX()
+                    && node.getY() == target.getY()){
+
+                return  true;
+            }
+        }
+
+        return false;
     }
 
     private List<State> moveBot(Point2D end, State origin){
@@ -1726,19 +1734,7 @@ public class Sampler {
                 .doubleValue();
     }
 
-    private boolean lineIntoStatic(Line2D path, State state){
-        for(MovingBox mb : state.getMovingBoxes()){
-            if(path.intersects(mb.getRect())){
-                return true;
-            }
-        }
-
-        for(MovingObstacle mo : state.getMovingObstacles()){
-            if(path.intersects(mo.getRect())){
-                return true;
-            }
-        }
-
+    private boolean lineIntoStatic(Line2D path){
         for(StaticObstacle so : staticObstacles){
             if(path.intersects(so.getRect())){
                 return true;
