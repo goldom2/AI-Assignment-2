@@ -1230,9 +1230,9 @@ public class Sampler {
 //            addBuildStepsToPath(path, intermediate, next, noGoalZones, index);
             if (addBuildStepsToPath(path, init, intermediate, noGoalZones, index)
                     || addBuildStepsToPath(path, intermediate, next, noGoalZones, index)) {
-                return false;
-//                result = false;
-//                break;
+//                return false;
+                result = false;
+                break;
             }
 
             init = next;
@@ -1694,10 +1694,10 @@ public class Sampler {
             Box projMB;
             if (origin instanceof MovingBox) {
                 projMB = new MovingBox(
-                        new Point2D.Double(curX, curY), ((MovingBox) origin).getEndPos(), roboWidth);
+                        new Point2D.Double(curX, curY), ((MovingBox) origin).getEndPos(), origin.getWidth());
             } else {
                 projMB = new MovingObstacle(
-                        new Point2D.Double(curX, curY), roboWidth);
+                        new Point2D.Double(curX, curY), origin.getWidth());
             }
 
 
