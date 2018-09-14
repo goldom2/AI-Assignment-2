@@ -1102,6 +1102,7 @@ public class Sampler {
     private void pathBox(Box box, Box goal, Set<Box> samples, List<State> path) {
         System.out.println("Gotta move " + ((box instanceof MovingBox) ? "MovingBox " : "MovingObstacle ") + box.toString() + " to " + goal.toString());
         Box init = box;
+        List<State> offset = new ArrayList<>();
 
         //Find dock positions
         Point2D robDockPos = findDock(box, path.get(path.size() - 1).getRobo());
@@ -1120,6 +1121,41 @@ public class Sampler {
             addBuildStepsToPath(path, intermediate, next);
 
             init = next;
+        }
+
+        //arrived at destination move bot off box to path to next box
+        Point2D center = new Point2D.Double(
+                goal.getPos().getX() + goal.getWidth()/2,
+                goal.getPos().getY() + goal.getWidth()/2
+        );
+
+        RobotConfig cur = path.get(path.size() - 1).getRobo();
+        State curState = path.get(path.size() - 1);
+
+        if(cur.getPos().getX() < center.getX()) {    //left
+            path.addAll(moveBot(new Point2D.Double(
+                    center.getX() - roboWidth,
+                    center.getY()
+            ), curState));
+
+        }else if(cur.getPos().getX() > center.getX()){  //right
+            path.addAll(moveBot(new Point2D.Double(
+                    center.getX() + roboWidth,
+                    center.getY()
+            ), curState));
+
+        }else if(cur.getPos().getY() < center.getY()){  //below
+            path.addAll(moveBot(new Point2D.Double(
+                    center.getX(),
+                    center.getY() - roboWidth
+            ), curState));
+
+        }else if(cur.getPos().getY() > center.getY()){  //top
+            path.addAll(moveBot(new Point2D.Double(
+                    center.getX(),
+                    center.getY() + roboWidth
+            ), curState));
+
         }
     }
 
@@ -1174,7 +1210,6 @@ public class Sampler {
             step = createNewState(state, sStep, last);
 
             path.add(step);
-
             last = sStep;
         }
     }
@@ -1199,7 +1234,7 @@ public class Sampler {
 
         for(RobotConfig r : rp) {
 
-            RobotConfig intermediate = validatePath(last.getPos(), r.getPos());
+            RobotConfig intermediate = validatePath(last.getPos(), r.getPos(), focus);
 
 //            System.out.println("-->" +last.getPos().getX() + ", " + last.getPos().getY());
 //            System.out.println(intermediate.getPos().getX() + ", " + intermediate.getPos().getY());
@@ -1531,17 +1566,21 @@ public class Sampler {
         return result;
     }
 
-    public RobotConfig validatePath(Point2D start, Point2D end){
+    public RobotConfig validatePath(Point2D start, Point2D end, Box focus){
         //        |----
         // Path 1 |
 
         Point2D p = new Point2D.Double(start.getX(), end.getY());
+
         Line2D l1 = new Line2D.Double(start, p);
         Line2D l2 = new Line2D.Double(p, end);
         Rectangle2D intermediatePos = new Rectangle2D.Double(
                 p.getX() - roboWidth/2, p.getY() - roboWidth/2, roboWidth, roboWidth);
 
+//        System.out.println("intersects with y aixs: " + !l0.intersects(focus.getRect()));
+
         if (!lineIntoStatic(l1) && !lineIntoStatic(l2) && !staticCollision(intermediatePos)) {
+
             return new RobotConfig(p, Math.PI/2);
         }
 
@@ -1549,12 +1588,16 @@ public class Sampler {
         // Path 2 ----|
 
         p = new Point2D.Double(start.getX(), end.getY());
+
         l1 = new Line2D.Double(start, p);
         l2 = new Line2D.Double(p, end);
         intermediatePos = new Rectangle2D.Double(
                 p.getX() - roboWidth/2, p.getY() - roboWidth/2, roboWidth, roboWidth);
 
+//        System.out.println("intersects with x aixs: " + l0.intersects(focus.getRect()));
+
         if (!lineIntoStatic(l1) && !lineIntoStatic(l2) && !staticCollision(intermediatePos)) {
+
             return new RobotConfig(p, 0);
         }
 
@@ -1566,7 +1609,7 @@ public class Sampler {
         Set<RobotConfig> neighbours = new HashSet<>();
 
         for(RobotConfig rb : samples){
-            if(validatePath(cur.getPos(), rb.getPos()) != null){
+            if(validatePath(cur.getPos(), rb.getPos(), focus) != null){
                 neighbours.add(rb);
             }
         }
