@@ -276,6 +276,38 @@ public class Sampler {
      * @param box
      * @return
      */
+    public boolean roboCollision(Rectangle2D box, State state) {
+        for (StaticObstacle so : staticObstacles) {
+            if (box.intersects(so.getRect())) {
+                return true;
+            }
+        }
+
+        for (MovingObstacle mo : state.getMovingObstacles()) {
+            if (box.intersects(mo.getRect())) {
+                return true;
+            }
+        }
+
+        for (MovingBox mb : state.getMovingBoxes()) {
+            if (box.intersects(mb.getRect())) {
+                return true;
+            }
+        }
+
+        Rectangle2D board = new Rectangle2D.Double(0, 0, 1, 1);
+        if (!board.contains(box)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if the given Rectangle collides with any static obstacles or the edge of the board
+     *
+     * @param box
+     * @return
+     */
     public boolean staticCollision(Rectangle2D box) {
         for (StaticObstacle so : staticObstacles) {
             if (box.intersects(so.getRect())) {
@@ -1237,28 +1269,20 @@ public class Sampler {
             curState =  path.get(path.size() - 1);
             path.addAll(rotateBot(intermediate.getOrientation() * (180/Math.PI), curState, cc));
 
+            System.out.println("pre angle: " + intermediate.getOrientation() * (180/Math.PI));
+
             curState =  path.get(path.size() - 1);
             path.addAll(moveBot(intermediate.getPos(), curState));
 
             cc = (last.getOrientation() < intermediate.getOrientation());
 
-            if(r.getOrientation() != Math.PI/2 && r.getPos().getY() != intermediate.getPos().getY()){
-                curState =  path.get(path.size() - 1);
-                path.addAll(rotateBot(0, curState, cc));
+            curState =  path.get(path.size() - 1);
+            path.addAll(rotateBot(Math.abs(intermediate.getOrientation() - Math.PI/2) * (180/Math.PI), curState, cc));
 
-            }else if(r.getOrientation() != 0 && r.getPos().getX() != intermediate.getPos().getX()){
-                curState =  path.get(path.size() - 1);
-                path.addAll(rotateBot(Math.PI/2, curState, cc));
-
-            }
+            System.out.println("post angle: " + r.getOrientation() * (180/Math.PI));
 
             curState =  path.get(path.size() - 1);
             path.addAll(moveBot(r.getPos(), curState));
-
-            cc = (last.getOrientation() < intermediate.getOrientation());
-
-            curState =  path.get(path.size() - 1);
-            path.addAll(rotateBot(r.getOrientation() * (180/Math.PI), curState, cc));
 
             last = r;
         }
@@ -1579,7 +1603,7 @@ public class Sampler {
 
 //        System.out.println("intersects with y aixs: " + !l0.intersects(focus.getRect()));
 
-        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !staticCollision(intermediatePos)) {
+        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !roboCollision(intermediatePos, state)) {
 
             return new RobotConfig(p, Math.PI/2);
         }
@@ -1587,7 +1611,7 @@ public class Sampler {
         //            |
         // Path 2 ----|
 
-        p = new Point2D.Double(start.getX(), end.getY());
+        p = new Point2D.Double(end.getX(), start.getY());
 
         l1 = new Line2D.Double(start, p);
         l2 = new Line2D.Double(p, end);
@@ -1596,7 +1620,7 @@ public class Sampler {
 
 //        System.out.println("intersects with x aixs: " + l0.intersects(focus.getRect()));
 
-        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !staticCollision(intermediatePos)) {
+        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !roboCollision(intermediatePos, state)) {
 
             return new RobotConfig(p, 0);
         }
