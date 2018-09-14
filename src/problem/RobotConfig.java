@@ -1,6 +1,7 @@
 package problem;
 
 import java.awt.geom.Point2D;
+import java.util.Objects;
 
 /**
  * This class represents the configuration of the agent in Assignment 1.
@@ -74,4 +75,8 @@ public class RobotConfig {
         return false;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(pos, angle);
+    }
 }

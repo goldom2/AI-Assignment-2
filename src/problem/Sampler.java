@@ -1161,22 +1161,13 @@ public class Sampler {
         List<State> path = new ArrayList<>();
         path.add(og);
 
-        //horo robot
-        posRoboConfig = sampleNewRobo(new RobotConfig(
-                robo.getPos(), 0));
-
-        //vert robot
-        posRoboConfig.addAll(sampleNewRobo(new RobotConfig(
-                robo.getPos(), Math.PI/2)));
+//        //horo robot
+//        posRoboConfig = sampleNewRobo(new RobotConfig(robo.getPos(), 0));
+//        //vert robot
+//        posRoboConfig.addAll(sampleNewRobo(new RobotConfig(robo.getPos(), Math.PI/2)));
 
         boolean complete = false;
         while (!complete) {
-//            for (MovingBox mbog : path.get(path.size() - 1).getMovingBoxes()) { //hard limit placed
-//                if (!mbog.getPos().equals(mbog.getEndPos())) {
-//                    pathBox(mbog, new MovingBox(mbog.getEndPos(), mbog.getEndPos(), mbog.getWidth()),
-//                            sampleNewState(mbog), path, new HashSet<>(), path.get(path.size() - 1).getMovingBoxes().indexOf(mbog));
-//                }
-//            }
             for (int i = 0; i < movingBoxes.size(); i++) {
                 MovingBox mbog = path.get(path.size() - 1).getMovingBoxes().get(i);
                 if (!mbog.getPos().equals(mbog.getEndPos())) {
@@ -1212,6 +1203,10 @@ public class Sampler {
         Box init = box;
         List<State> offset = new ArrayList<>();
 
+        //horo robot
+        posRoboConfig = sampleNewRobo(new RobotConfig(path.get(path.size() - 1).getRobo().getPos(), 0));
+        //vert robot
+        posRoboConfig.addAll(sampleNewRobo(new RobotConfig(path.get(path.size() - 1).getRobo().getPos(), Math.PI/2)));
         //Find dock positions
         Point2D robDockPos = findDock(box, path.get(path.size() - 1).getRobo());
         posRoboConfig.add(new RobotConfig(robDockPos, 0));
@@ -1297,13 +1292,21 @@ public class Sampler {
         }
 
         boolean obstacle = false;
-        for (MovingObstacle mo : path.get(path.size() - 1).getMovingObstacles()) {
+        for (int i = 0; i < path.get(path.size() - 1).getMovingObstacles().size(); i++) {
+            if (init instanceof MovingObstacle && i == thisIndex) {
+                continue;
+            }
+            MovingObstacle mo = path.get(path.size() - 1).getMovingObstacles().get(i);
             System.out.println("Checking for collisions with MovingObstacle: " + mo.toString());
-            obstacle = obstacle || moveObstacle(path, union, noGoalZones, init, mo, index);
+            obstacle = moveObstacle(path, union, noGoalZones, init, mo, index) || obstacle;
         }
-        for (MovingBox mb : path.get(path.size() - 1).getMovingBoxes()) {
+        for (int i = 0; i < path.get(path.size() - 1).getMovingBoxes().size(); i++) {
+            if (init instanceof MovingBox && i == thisIndex) {
+                continue;
+            }
+            MovingBox mb = path.get(path.size() - 1).getMovingBoxes().get(i);
             System.out.println("Checking for collisions with MovingBox: " + mb.toString());
-            obstacle = obstacle || moveObstacle(path, union, noGoalZones, init, mb, index);
+            obstacle = moveObstacle(path, union, noGoalZones, init, mb, index) || obstacle;
         }
 
         if (obstacle) {
@@ -1311,24 +1314,25 @@ public class Sampler {
                 if (!path.get(path.size() - 1).getMovingBoxes().get(thisIndex).equals(init)) {
                     return true;
                 }
+                init = path.get(path.size() - 1).getMovingBoxes().get(thisIndex);
             } else {
                 if (!path.get(path.size() - 1).getMovingObstacles().get(thisIndex).equals(init)) {
                     return true;
                 }
+                init = path.get(path.size() - 1).getMovingObstacles().get(thisIndex);
             }
             //Find dock positions
             System.out.println("ONLY ONCE ----_____________---------------______------_______------_______-----");
-            Point2D robDockPos = findDock(init, path.get(path.size() - 1).getRobo());
+            RobotConfig r = path.get(path.size() - 1).getRobo();
+            //horo robot
+            posRoboConfig = sampleNewRobo(new RobotConfig(r.getPos(), 0));
+            //vert robot
+            posRoboConfig.addAll(sampleNewRobo(new RobotConfig(r.getPos(), Math.PI/2)));
+            Point2D robDockPos = findDock(init, r);
             posRoboConfig.add(new RobotConfig(robDockPos, 0));
             init.setDockPos(robDockPos);
             path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
         }
-
-//        //Find dock positions
-//        Point2D robDockPos = findDock(init, path.get(path.size() - 1).getRobo());
-//        posRoboConfig.add(new RobotConfig(robDockPos, 0));
-//        init.setDockPos(robDockPos);
-//        path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
 
         State state;
         State step;
@@ -1347,27 +1351,18 @@ public class Sampler {
     }
 
     private boolean moveObstacle(List<State> path, Rectangle2D union, Set<Rectangle2D> noGoalZones, Box init, Box box, int index) {
-        System.out.println("The Union is " + union.toString());
-        if (box.getRect().intersects(union) ) {//&& System.out.println("It intersects") && !box.equals(init)) {
-            System.out.println("It intersects");
-            if (!box.equals(init)) {
-                System.out.println("Oh my it appears there's a " + ((box instanceof MovingBox) ? "MovingBox" : "MovingObstacle") + " in our path");
-                Set<Box> nodes = sampleNewState(box);
-                Box target = chooseGoalNode(nodes, noGoalZones);
-                if (target == null) {
-                    System.out.println("Could not decide upon a goal node");
-                }
-                System.out.println("Time to move it");
-                pathBox(box, target, nodes, path, noGoalZones, index);
-                System.out.println("At least I can path it haha");
-
-//            Point2D robDockPos = findDock(init, path.get(path.size() - 1).getRobo());
-//            posRoboConfig.add( new RobotConfig(robDockPos, 0));
-//            init.setDockPos(robDockPos);
-//            path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
-//            System.out.println("And I can make it back home yay");
-                return true;
+        if (box.getRect().intersects(union) ) {
+            System.out.println("Oh my it appears there's a " + ((box instanceof MovingBox) ? "MovingBox" : "MovingObstacle") + " in our path");
+            Set<Box> nodes = sampleNewState(box);
+            Box target = chooseGoalNode(nodes, noGoalZones);
+            if (target == null) {
+                System.out.println("Could not decide upon a goal node");
             }
+            System.out.println("Time to move it");
+            pathBox(box, target, nodes, path, noGoalZones, index);
+            System.out.println("At least I can path it haha");
+
+            return true;
         }
         return false;
     }
@@ -1425,8 +1420,18 @@ public class Sampler {
             last = r;
         }
 
+        System.out.println("The robot made it to " + path.get(path.size() - 1).getRobo().getPos().toString() + " Chasing: " + ((focus instanceof MovingBox) ? "MovingBox " : "MovingObstacle ") + focus.toString() + " dockPos: " + focus.getDockPos());
+        if (!path.get(path.size() - 1).getRobo().getPos().equals(focus.getDockPos())) {
+            System.out.println("Yeah look didn't quite make it, let me fix that up for you");
+            // Teleport Robot back on track - remove if trying to fix pathing
+            path.get(path.size() - 1).setRobo(new RobotConfig(focus.getDockPos(), path.get(path.size() - 1).getRobo().getOrientation()));
+        }
         curState =  path.get(path.size() - 1);
         path.addAll(orientRobot(focus, curState));
+        System.out.println("The robot made it to " + path.get(path.size() - 1).getRobo().getPos().toString() + " Chasing: " + ((focus instanceof MovingBox) ? "MovingBox " : "MovingObstacle ") + focus.toString() + " dockPos: " + focus.getDockPos());
+        if (path.get(path.size() - 1).getRobo().getPos().distance(focus.getDockPos()) != roboWidth/2) {
+            System.out.println("orientRobot went wrong was off by: " + Math.abs(path.get(path.size() - 1).getRobo().getPos().distance(focus.getDockPos()) - roboWidth/2));
+        }
 
         return path;
     }
@@ -1782,6 +1787,9 @@ public class Sampler {
         // Initialise all the queues and sets to run the search
         Set<RoboPos> queue = new HashSet<>();
         Set<RobotConfig> visited = new HashSet<>();
+        if (!samples.contains(focus.getDockPos())) {
+
+        }
 
         Point2D end = focus.getDockPos();
 //        System.out.println("goal: " + end.getX() + ", " + end.getY());
@@ -1811,6 +1819,7 @@ public class Sampler {
             visited.add(current.getRobo());
 
             if (end.equals(current.getRobo().getPos())) {
+                System.out.println("So we did find a path ------------------------------------------------------------------------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
                 break;
             }
 
@@ -1831,7 +1840,7 @@ public class Sampler {
             count++;
         }
 
-        if (end.equals(current.getRobo().getPos())) {
+        if (!end.equals(current.getRobo().getPos())) {
             System.out.println("Could not find a path to the goal");
         }
 
