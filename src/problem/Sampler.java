@@ -834,14 +834,18 @@ public class Sampler {
             else if(method == 3){
                 path.addAll(nextRotate(state, face1, intFace, halfWidth));
             }
+
+            System.out.println("method2: " + method2);
+            State update = path.get(path.size() - 1);
+
             if(method2 ==1){
-                path.addAll(sideRotate(state, intFace, face2, halfWidth));
+                path.addAll(sideRotate(update, intFace, face2, halfWidth));
             }
             else if(method2 == 2){
-                path.addAll(backRotate(state, intFace, face2, halfWidth));
+                path.addAll(backRotate(update, intFace, face2, halfWidth));
             }
             else if(method2 == 3){
-                path.addAll(nextRotate(state, intFace, face2, halfWidth));
+                path.addAll(nextRotate(update, intFace, face2, halfWidth));
             }
         }
 
@@ -1161,43 +1165,43 @@ public class Sampler {
 
     private void addBuildStepsToPath(List<State> path, Box init, Box goal) {
         Rectangle2D union = init.getRect().createUnion(goal.getRect());
-            for (MovingObstacle mo : path.get(path.size() - 1).getMovingObstacles()) {
-                if (mo.getRect().intersects(union) && !mo.equals(init)) {
-                    System.out.println("Oh my it appears there's a MovingObstacle in our path");
-                    Set<Box> nodes = sampleNewState(mo);
-                    Box target = chooseGoalNode(nodes, union);
-                    if (target == null) {
-                        System.out.println("Could not decide upon a goal node");
-                    }
-                    System.out.println("Time to move it");
-                    pathBox(mo, target, nodes, path);
-                    System.out.println("At least I can path it haha");
+        for (MovingObstacle mo : path.get(path.size() - 1).getMovingObstacles()) {
+            if (mo.getRect().intersects(union) && !mo.equals(init)) {
+                System.out.println("Oh my it appears there's a MovingObstacle in our path");
+                Set<Box> nodes = sampleNewState(mo);
+                Box target = chooseGoalNode(nodes, union);
+                if (target == null) {
+                    System.out.println("Could not decide upon a goal node");
+                }
+                System.out.println("Time to move it");
+                pathBox(mo, target, nodes, path);
+                System.out.println("At least I can path it haha");
 
-                    Point2D robDockPos = findDock(init, path.get(path.size() - 1).getRobo());
-                    posRoboConfig.add(new RobotConfig(robDockPos, 0));
-                    init.setDockPos(robDockPos);
-                    path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
-                    System.out.println("And I can make it back home yay");
-                }
+                Point2D robDockPos = findDock(init, path.get(path.size() - 1).getRobo());
+                posRoboConfig.add(new RobotConfig(robDockPos, 0));
+                init.setDockPos(robDockPos);
+                path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
+                System.out.println("And I can make it back home yay");
             }
-            for (MovingBox mb : path.get(path.size() - 1).getMovingBoxes()) {
-                if (mb.getRect().intersects(union) && !mb.equals(init)) {
-                    System.out.println("Oh my it appears there's a MovingBox in our path");
-                    Set<Box> nodes = sampleNewState(mb);
-                    Box target = chooseGoalNode(nodes, union);
-                    if (target == null) {
-                        System.out.println("Could not decide upon a goal node");
-                    }
-                    System.out.println("Time to move it");
-                    pathBox(mb, target, nodes, path);
-                    System.out.println("At least I can path it haha");
-                    Point2D robDockPos = findDock(init, path.get(path.size() - 1).getRobo());
-                    posRoboConfig.add( new RobotConfig(robDockPos, 0));
-                    init.setDockPos(robDockPos);
-                    path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
-                    System.out.println("And I can make it back home yay");
+        }
+        for (MovingBox mb : path.get(path.size() - 1).getMovingBoxes()) {
+            if (mb.getRect().intersects(union) && !mb.equals(init)) {
+                System.out.println("Oh my it appears there's a MovingBox in our path");
+                Set<Box> nodes = sampleNewState(mb);
+                Box target = chooseGoalNode(nodes, union);
+                if (target == null) {
+                    System.out.println("Could not decide upon a goal node");
                 }
+                System.out.println("Time to move it");
+                pathBox(mb, target, nodes, path);
+                System.out.println("At least I can path it haha");
+                Point2D robDockPos = findDock(init, path.get(path.size() - 1).getRobo());
+                posRoboConfig.add( new RobotConfig(robDockPos, 0));
+                init.setDockPos(robDockPos);
+                path.addAll(linkRobToObjective(path.get(path.size() - 1), posRoboConfig, init));
+                System.out.println("And I can make it back home yay");
             }
+        }
 
         State state;
         State step;
@@ -1691,7 +1695,7 @@ public class Sampler {
 //            System.out.println("x: " + node.getX() + " - " + target.getX()+ "\ty: " + node.getX() + " - " + target.getY());
 
             if(node.getX() == target.getX()
-                && node.getY() == target.getY()){
+                    && node.getY() == target.getY()){
 
                 return  true;
             }
