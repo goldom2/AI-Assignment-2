@@ -456,14 +456,14 @@ public class Sampler {
             }
             State last = path.get(path.size() - 1);
 
-            while(last.getRobo().getPos().getX() < center.getX() - (roboWidth/2)){
+            while(last.getRobo().getPos().getX() < center.getX() - (mb.getWidth()/2)){
                 Point2D close = new Point2D.Double(last.getRobo().getPos().getX() + minStepSize, last.getRobo().getPos().getY());
                 RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
                 path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
 
                 last = path.get(path.size() - 1);
             }
-            while(last.getRobo().getPos().getX() > center.getX() + (roboWidth/2)){
+            while(last.getRobo().getPos().getX() > center.getX() + (mb.getWidth()/2)){
                 Point2D close = new Point2D.Double(last.getRobo().getPos().getX() - minStepSize, last.getRobo().getPos().getY());
                 RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
                 path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
@@ -480,14 +480,14 @@ public class Sampler {
 
             State last = path.get(path.size() - 1);
 
-            while(last.getRobo().getPos().getY() < center.getY() - (roboWidth/2)){
+            while(last.getRobo().getPos().getY() < center.getY() - (mb.getWidth()/2)){
                 Point2D close = new Point2D.Double(last.getRobo().getPos().getX(), last.getRobo().getPos().getY() + minStepSize);
                 RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
                 path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
 
                 last = path.get(path.size() - 1);
             }
-            while(last.getRobo().getPos().getY() > center.getY() + (roboWidth/2)){
+            while(last.getRobo().getPos().getY() > center.getY() + (mb.getWidth()/2)){
                 Point2D close = new Point2D.Double(last.getRobo().getPos().getX(), last.getRobo().getPos().getY() - minStepSize);
                 RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
                 path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
