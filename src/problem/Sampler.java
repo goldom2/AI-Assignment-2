@@ -456,14 +456,14 @@ public class Sampler {
             }
             State last = path.get(path.size() - 1);
 
-            while(last.getRobo().getPos().getX() < center.getX() - (mb.getWidth()/2)){
+            while(last.getRobo().getPos().getX() < center.getX() - (roboWidth/2)){
                 Point2D close = new Point2D.Double(last.getRobo().getPos().getX() + minStepSize, last.getRobo().getPos().getY());
                 RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
                 path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
 
                 last = path.get(path.size() - 1);
             }
-            while(last.getRobo().getPos().getX() > center.getX() + (mb.getWidth()/2)){
+            while(last.getRobo().getPos().getX() > center.getX() + (roboWidth/2)){
                 Point2D close = new Point2D.Double(last.getRobo().getPos().getX() - minStepSize, last.getRobo().getPos().getY());
                 RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
                 path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
@@ -480,14 +480,14 @@ public class Sampler {
 
             State last = path.get(path.size() - 1);
 
-            while(last.getRobo().getPos().getY() < center.getY() - (mb.getWidth()/2)){
+            while(last.getRobo().getPos().getY() < center.getY() - (roboWidth/2)){
                 Point2D close = new Point2D.Double(last.getRobo().getPos().getX(), last.getRobo().getPos().getY() + minStepSize);
                 RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
                 path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
 
                 last = path.get(path.size() - 1);
             }
-            while(last.getRobo().getPos().getY() > center.getY() + (mb.getWidth()/2)){
+            while(last.getRobo().getPos().getY() > center.getY() + (roboWidth/2)){
                 Point2D close = new Point2D.Double(last.getRobo().getPos().getX(), last.getRobo().getPos().getY() - minStepSize);
                 RobotConfig push = new RobotConfig(close, last.getRobo().getOrientation());
                 path.add(new State(push, last.getMovingBoxes(), last.getMovingObstacles()));
@@ -565,8 +565,6 @@ public class Sampler {
         List<State> path = new ArrayList<>();
         double orien = state.getRobo().getOrientation();
         double step = 0;
-
-        System.out.println("dist in reface: " + dist);
 
         RobotConfig newRobo = state.getRobo();
 //        System.out.println(dist);
@@ -733,7 +731,7 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, false));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, true));
                 path.addAll(rotateBot(270, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
 
 
             }
@@ -741,7 +739,7 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, false));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, true));
                 path.addAll(rotateBot(90, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, false));
             }
         }
         else if(face1 == 2){ // Right
@@ -749,13 +747,13 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, false));
                 path.addAll(rotateBot(0, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
             }
             else{ // Bottom
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, false));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, true));
             }
         }
         else if(face1 == 3){ // Bottom
@@ -763,13 +761,13 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, false));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, true));
                 path.addAll(rotateBot(270, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
             }
             else{ // Left
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, false));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, true));
                 path.addAll(rotateBot(90, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, false));
             }
         }
         else if(face1 == 4){ // Left
@@ -777,13 +775,13 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, false));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, true));
             }
             else{ // Top
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, false));
                 path.addAll(rotateBot(0, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
             }
         }
         return path;
@@ -1285,9 +1283,7 @@ public class Sampler {
         return result;
     }
 
-    private boolean addBuildStepsToPath(List<State> path, Box init, Box goal,
-                                        Set<Rectangle2D> noGoalZones, int index) {
-
+    private boolean addBuildStepsToPath(List<State> path, Box init, Box goal, Set<Rectangle2D> noGoalZones, int index) {
         Rectangle2D union = init.getRect().createUnion(goal.getRect());
         noGoalZones.add(union);
 
@@ -1356,7 +1352,6 @@ public class Sampler {
         Box last = init;
         for(Box sStep : buildStep(init, goal)){
             state = path.get(path.size() - 1);
-            System.out.println("box width: " + last.getWidth());
             path.addAll(refaceRobot(last, sStep, state));
 
             state = path.get(path.size() - 1);
@@ -1365,7 +1360,6 @@ public class Sampler {
             path.add(step);
             last = sStep;
         }
-
         return false;
     }
 
@@ -1719,12 +1713,16 @@ public class Sampler {
             if (origin instanceof MovingBox) {
                 projMB = new MovingBox(
                         new Point2D.Double(curX, curY), ((MovingBox) origin).getEndPos(), origin.getWidth());
-                path.add(projMB);
-            } else if (origin instanceof MovingObstacle){
+            } else {
                 projMB = new MovingObstacle(
                         new Point2D.Double(curX, curY), origin.getWidth());
-                path.add(projMB);
             }
+
+
+            // can check projected, if intersects with obstacle
+
+            path.add(projMB);
+
         }
 
         return path;
