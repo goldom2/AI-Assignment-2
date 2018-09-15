@@ -709,7 +709,7 @@ public class Sampler {
             if(face2 == 3){ //Bottom
                 path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth + halfBox, 1, false));
             }
             else{ // Top
