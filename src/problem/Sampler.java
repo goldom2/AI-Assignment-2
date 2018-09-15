@@ -1252,6 +1252,29 @@ public class Sampler {
         return result;
     }
 
+    private List<State> findReverseFace(Point2D center, Box mb, List<State> path){
+
+        State state = path.get(path.size() - 1);
+
+        Set<Point2D> dockPos = new HashSet<>();
+        dockPos.add(new Point2D.Double(center.getX() + (roboWidth/2 + mb.getWidth()/2), center.getY()));    //right hand side ...robo width 0.01
+        dockPos.add(new Point2D.Double(center.getX() - (roboWidth/2 + mb.getWidth()/2), center.getY()));    //left hand side
+        dockPos.add(new Point2D.Double(center.getX(), center.getY() + (roboWidth/2 + mb.getWidth()/2)));    //upper hand side
+        dockPos.add(new Point2D.Double(center.getX(), center.getY() - (roboWidth/2 + mb.getWidth()/2)));    //under hand side
+
+        for(Point2D pos : dockPos){
+//            Rectangle2D proj = new Rectangle2D.Double(pos.getX(), pos.getY(), mb.getWidth(), mb.getWidth());
+            Rectangle2D proj = new Rectangle2D.Double(pos.getX() - roboWidth/2, pos.getY() - roboWidth/2, roboWidth, roboWidth);
+            if(!roboCollision(proj, state)) {
+
+                Box next = new MovingObstacle(pos, mb.getWidth());
+                refaceRobot(mb, next, state);
+            }
+        }
+
+        return null;
+    }
+
     private void reverseOut(List<State> path, Box goal){
 
         Point2D center = new Point2D.Double(
@@ -1259,15 +1282,11 @@ public class Sampler {
                 goal.getPos().getY() + goal.getWidth()/2
         );
 
+        findReverseFace(center, goal, path);
+
         RobotConfig cur = path.get(path.size() - 1).getRobo();
         State curState = path.get(path.size() - 1);
 
-        if(goal instanceof MovingObstacle){
-            System.out.println("moving obstacles being dum" + goal.getPos().toString());
-            System.out.println("-> " + goal.getWidth());
-            System.out.println("-> " + center.toString());
-            System.out.println("-> " + cur.getPos().toString());
-        }
 
         if(cur.getPos().getX() < center.getX()) {    //left
             path.addAll(moveBot(new Point2D.Double(
