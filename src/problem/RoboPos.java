@@ -45,6 +45,6 @@ public class RoboPos {
 
     @Override
     public int hashCode() {
-        return cur.getPos().hashCode();
+        return cur.hashCode();
     }
 }

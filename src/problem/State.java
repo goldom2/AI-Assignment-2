@@ -115,6 +115,10 @@ public class State {
         return robot;
     }
 
+    public void setRobo(RobotConfig robot){
+        this.robot = robot;
+    }
+
     /**
      * Calculates the minimum distance for each box to the goal state
      *
