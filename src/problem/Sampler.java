@@ -1247,10 +1247,23 @@ public class Sampler {
         }
 
         //arrived at destination move bot off box to path to next box
+        reverseOut(path, goal);
+
+        return result;
+    }
+
+    private void reverseOut(List<State> path, Box goal){
+
         Point2D center = new Point2D.Double(
                 goal.getPos().getX() + goal.getWidth()/2,
                 goal.getPos().getY() + goal.getWidth()/2
         );
+
+        if(goal instanceof MovingObstacle){
+            System.out.println("moving obstacles being dum" + goal.getPos().toString());
+            System.out.println("-> " + goal.getWidth());
+            System.out.println("-> " + center.toString());
+        }
 
         RobotConfig cur = path.get(path.size() - 1).getRobo();
         State curState = path.get(path.size() - 1);
@@ -1280,7 +1293,6 @@ public class Sampler {
             ), curState));
 
         }
-        return result;
     }
 
     private boolean addBuildStepsToPath(List<State> path, Box init, Box goal, Set<Rectangle2D> noGoalZones, int index) {
@@ -1351,8 +1363,8 @@ public class Sampler {
         State step;
         Box last = init;
         for(Box sStep : buildStep(init, goal)){
-            state = path.get(path.size() - 1);
-            path.addAll(refaceRobot(last, sStep, state));
+//            state = path.get(path.size() - 1);
+//            path.addAll(refaceRobot(last, sStep, state));
 
             state = path.get(path.size() - 1);
             step = createNewState(state, sStep, last);
@@ -1366,6 +1378,8 @@ public class Sampler {
     private boolean moveObstacle(List<State> path, Rectangle2D union, Set<Rectangle2D> noGoalZones, Box init, Box box, int index) {
         if (box.getRect().intersects(union) ) {
             System.out.println("Oh my it appears there's a " + ((box instanceof MovingBox) ? "MovingBox" : "MovingObstacle") + " in our path");
+            reverseOut(path, init);
+
             Set<Box> nodes = sampleNewState(box);
             Box target = chooseGoalNode(nodes, noGoalZones);
             if (target == null) {
@@ -1759,7 +1773,7 @@ public class Sampler {
 
 //        System.out.println("intersects with y aixs: " + !l0.intersects(focus.getRect()));
 
-        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !roboCollision(intermediatePos, state)) {
+        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state)) {
 
             return new RobotConfig(p, Math.PI/2);
         }
@@ -1776,7 +1790,7 @@ public class Sampler {
 
 //        System.out.println("intersects with x aixs: " + l0.intersects(focus.getRect()));
 
-        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state) && !roboCollision(intermediatePos, state)) {
+        if (!lineIntoStatic(l1, state) && !lineIntoStatic(l2, state)) {
 
             return new RobotConfig(p, 0);
         }
