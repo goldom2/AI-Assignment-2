@@ -1,6 +1,6 @@
 package problem;
 
-import sun.jvm.hotspot.utilities.ObjectReader;
+//import sun.jvm.hotspot.utilities.ObjectReader;
 
 import javax.sound.midi.SysexMessage;
 import javax.swing.plaf.synth.SynthLookAndFeel;
@@ -822,6 +822,7 @@ public class Sampler {
 //        System.out.println("Delta: " + deltaX + ", " + deltaY);
 
         if(Math.abs(deltaX) < 0.004 && deltaX != 0){
+            System.out.println("Changing x by " + deltaX);
             if(deltaX < 0){
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaX), -1, false));
             }
@@ -833,6 +834,8 @@ public class Sampler {
 
 
         if(Math.abs(deltaY) < 0.004 && deltaY != 0){
+            System.out.println("Changing y by " + deltaY);
+
             if(deltaY < 0){
                 path.addAll(refaceRobotTransition(state, Math.abs(deltaY), -1, true));
             }
@@ -844,7 +847,8 @@ public class Sampler {
 
         cur = state.getRobo();
 
-        if(cur.getPos().getX() < center.getX()){    //left
+
+        if(Math.abs((cur.getOrientation() * (180/Math.PI)) - 90 ) < 0.001){ // && Math.abs(cur.getPos().getY() - center.getY()) < 0.01){    //left
             face1 = 4;
 //            System.out.println("bot left of center");
             if(nc.getY() > center.getY()){    //next pos is above prev pos so move bot on below
@@ -859,7 +863,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(cur.getPos().getX() > center.getX()){  //right
+        }else if(Math.abs((cur.getOrientation() * (180/Math.PI)) - 270 ) < 0.001){ // && Math.abs(cur.getPos().getY() - center.getY()) < 0.01){  //right
             face1 = 2;
             if(nc.getY() > center.getY()){  //above so below
                 face2 = 3;
@@ -873,7 +877,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(cur.getPos().getY() < center.getY()){  //down
+        }else if(Math.abs((cur.getOrientation() * (180/Math.PI)) - 180 ) < 0.001){ //) && Math.abs(cur.getPos().getX() - center.getX()) < 0.01){  //down
             face1 = 3;
             if(nc.getX() < center.getX()){  //left so right
                 face2 = 2;
@@ -887,7 +891,7 @@ public class Sampler {
                 return path;
             }
 
-        }else if(cur.getPos().getY() > center.getY()){  //up
+        }else if(Math.abs((cur.getOrientation() * (180/Math.PI))) < 0.001 || Math.abs((cur.getOrientation() * (180/Math.PI)) - 360) < 0.001){ // && Math.abs(cur.getPos().getX() - center.getX()) < 0.01){  //up
             face1 = 1;
             if(nc.getX() < center.getX()){  //left so right
                 face2 = 2;
@@ -901,9 +905,15 @@ public class Sampler {
                 return path;
             }
         }
+        else{
+            System.out.println("Fuck off");
+        }
+
+        System.out.println("Face 1: " + face1 + ", Face 2: "+ face2 + ", IntFace: " + intFace);
 
         if(intFace == 0){
             method = checkRotation(state, face1, face2, center.getX(), center.getY(), boxWidth);
+            System.out.println("Method: " + method);
             if(method ==1){
                 path.addAll(sideRotate(state, face1, face2, halfWidth));
             }
@@ -919,6 +929,7 @@ public class Sampler {
 
         }
         else{
+            System.out.println("Switch");
             method = checkRotation(state, face1, intFace, center.getX(), center.getY(), boxWidth);
             method2 = checkRotation(state, intFace, face2, center.getX(), center.getY(), boxWidth);
             if(method == 0 || method2 == 0){
@@ -928,9 +939,11 @@ public class Sampler {
                 else{
                     intFace = 1;
                 }
+                System.out.println("Init didnt work");
                 method = checkRotation(state, face1, intFace, center.getX(), center.getY(), boxWidth);
                 method2 = checkRotation(state, intFace, face2, center.getX(), center.getY(), boxWidth);
             }
+            System.out.println("Method 1: "+method + ", Method 2: "+method2);
             if(method ==1){
                 path.addAll(sideRotate(state, face1, intFace, halfWidth));
             }
@@ -1339,7 +1352,7 @@ public class Sampler {
         Box last = init;
         for(Box sStep : buildStep(init, goal)){
             state = path.get(path.size() - 1);
-//            path.addAll(refaceRobot(last, sStep, state));
+            path.addAll(refaceRobot(last, sStep, state));
 
             state = path.get(path.size() - 1);
             step = createNewState(state, sStep, last);
