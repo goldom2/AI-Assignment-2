@@ -731,7 +731,7 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, false));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, true));
                 path.addAll(rotateBot(270, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
 
 
             }
@@ -739,7 +739,7 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, false));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, true));
                 path.addAll(rotateBot(90, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, false));
             }
         }
         else if(face1 == 2){ // Right
@@ -747,13 +747,13 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, false));
                 path.addAll(rotateBot(0, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
             }
             else{ // Bottom
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, -1, false));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, true));
             }
         }
         else if(face1 == 3){ // Bottom
@@ -761,13 +761,13 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, false));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, true));
                 path.addAll(rotateBot(270, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, false));
             }
             else{ // Left
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, false));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, true));
                 path.addAll(rotateBot(90, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, false));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, false));
             }
         }
         else if(face1 == 4){ // Left
@@ -775,13 +775,13 @@ public class Sampler {
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, -1, true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, false));
                 path.addAll(rotateBot(180, path.get(path.size() - 1), true));
-                path.addAll(refaceRobotTransition(state, halfWidth, 1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, 1, true));
             }
             else{ // Top
                 path.addAll(refaceRobotTransition(state, halfWidth + halfBox, 1, true));
                 path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfBox, 1, false));
                 path.addAll(rotateBot(0, path.get(path.size() - 1), false));
-                path.addAll(refaceRobotTransition(state, halfWidth, -1, true));
+                path.addAll(refaceRobotTransition(path.get(path.size() - 1), halfWidth, -1, true));
             }
         }
         return path;
