@@ -1252,37 +1252,54 @@ public class Sampler {
         return result;
     }
 
-    private List<State> findReverseFace(Point2D center, Box mb, List<State> path){
+    private void verifyReverseOut(List<State> path, Box og){
 
         State state = path.get(path.size() - 1);
+        RobotConfig cur = state.getRobo();
+        Point2D rp = cur.getPos();
 
-        Set<Point2D> dockPos = new HashSet<>();
-        dockPos.add(new Point2D.Double(center.getX() + (roboWidth/2 + mb.getWidth()/2), center.getY()));    //right hand side ...robo width 0.01
-        dockPos.add(new Point2D.Double(center.getX() - (roboWidth/2 + mb.getWidth()/2), center.getY()));    //left hand side
-        dockPos.add(new Point2D.Double(center.getX(), center.getY() + (roboWidth/2 + mb.getWidth()/2)));    //upper hand side
-        dockPos.add(new Point2D.Double(center.getX(), center.getY() - (roboWidth/2 + mb.getWidth()/2)));    //under hand side
+        Box next;
 
-        for(Point2D pos : dockPos){
-//            Rectangle2D proj = new Rectangle2D.Double(pos.getX(), pos.getY(), mb.getWidth(), mb.getWidth());
-            Rectangle2D proj = new Rectangle2D.Double(pos.getX() - roboWidth/2, pos.getY() - roboWidth/2, roboWidth, roboWidth);
-            if(!roboCollision(proj, state)) {
+        if(cur.getOrientation() == Math.PI/2){ //left -> bottom
+            next = new MovingBox(new Point2D.Double(
+                og.getPos().getX(), og.getPos().getY() + og.getWidth()
+            ), og.getWidth());
 
-                Box next = new MovingObstacle(pos, mb.getWidth());
-                refaceRobot(mb, next, state);
-            }
+        }else if(cur.getOrientation() == 3*Math.PI/2){ //right -> top
+            next = new MovingBox(new Point2D.Double(
+                    og.getPos().getX(), og.getPos().getY() - og.getWidth()
+            ), og.getWidth());
+
+        }else if(cur.getOrientation() == Math.PI){ //bottom -> right
+            next = new MovingBox(new Point2D.Double(
+                    og.getPos().getX() - og.getWidth(), og.getPos().getY()
+            ), og.getWidth());
+
+        }else{  //top -> left
+            next = new MovingBox(new Point2D.Double(
+                    og.getPos().getX() + og.getWidth(), og.getPos().getY()
+            ), og.getWidth());
+
         }
 
-        return null;
+        Rectangle2D proj = new Rectangle2D.Double(
+                rp.getX() - roboWidth/2,
+                rp.getY() - roboWidth/2,
+                roboWidth, roboWidth);
+
+        if(!roboCollision(proj, state)) {
+            path.addAll(refaceRobot(og, next, state));
+        }
     }
 
     private void reverseOut(List<State> path, Box goal){
+
+        verifyReverseOut(path, goal);
 
         Point2D center = new Point2D.Double(
                 goal.getPos().getX() + goal.getWidth()/2,
                 goal.getPos().getY() + goal.getWidth()/2
         );
-
-        findReverseFace(center, goal, path);
 
         RobotConfig cur = path.get(path.size() - 1).getRobo();
         State curState = path.get(path.size() - 1);
