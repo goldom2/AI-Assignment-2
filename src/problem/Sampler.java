@@ -2,6 +2,8 @@ package problem;
 
 //import sun.jvm.hotspot.utilities.ObjectReader;
 
+import org.w3c.dom.css.Rect;
+
 import javax.sound.midi.SysexMessage;
 import javax.swing.plaf.synth.SynthLookAndFeel;
 import java.awt.*;
@@ -17,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.*;
 
 public class Sampler {
 
@@ -970,32 +973,33 @@ public class Sampler {
         return path;
     }
 
+
     public boolean checkRect(State state, double x, double y, double w, double h){
         List<MovingBox> movingboxes = state.getMovingBoxes();
         List<MovingObstacle> movingObstacles = state.getMovingObstacles();
 
         if(x < 0 || y < 0 || x > 1 - h/2 || y > 1 - h/2){
-//            System.out.println("Wall");
+            //System.out.println("Wall");
             return false;
         }
 
-        Rectangle2D rect = new Rectangle2D.Double(x, y, w, h);
+        Rectangle2D rect = new Rectangle2D.Double(x + 0.0001, y + 0.0001, w - 0.0002, h - 0.0002);
 
         if(staticCollision(rect)){
-//            System.out.println("Static");
+            //System.out.println("Static");
             return false;
         }
 
         for(MovingObstacle box : movingObstacles){
             if(box.getRect().intersects(rect)){
-//                System.out.println("obstacle");
+                //System.out.println("obstacle");
                 return false;
             }
         }
 
         for(MovingBox box : movingboxes){
             if(box.getRect().intersects(rect)){
-//                System.out.println("box");
+                //System.out.println("box");
                 return false;
             }
         }
@@ -1201,6 +1205,7 @@ public class Sampler {
         }
 
         printOutput(solutionFile, path);
+        System.out.println("Number of steps: " + path.size());
     }
 
     /**

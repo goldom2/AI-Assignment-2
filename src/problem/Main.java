@@ -7,13 +7,14 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
-        if (args.length != 2) {
-            System.out.println("Usage: java ProgramName inputFileName outputFileName");
-            System.exit(1);
-        }
+        long startTime = System.nanoTime();
+//        if (args.length != 2) {
+//            System.out.println("Usage: java ProgramName inputFileName outputFileName");
+//            System.exit(1);
+//        }
         ProblemSpec ps = new ProblemSpec();
         try {
-            ps.loadProblem(args[0]);
+            ps.loadProblem("spaces.txt");
 //            ps.loadSolution("solution1.txt");
         } catch (IOException e) {
             System.out.println("IO Exception occurred: Could not load + " + args[0]);
@@ -36,6 +37,9 @@ public class Main {
 
         Sampler ss = new Sampler(ps.getInitialRobotConfig(),
                 mb, ps.getStaticObstacles(),mo);
-        ss.stepObjectiveSampling(args[1]);
+        ss.stepObjectiveSampling("solution1.txt");
+        long endTime = System.nanoTime();
+
+        System.out.println("Time for execution: " + (endTime - startTime)/1000000);
     }
 }
