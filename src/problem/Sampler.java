@@ -508,6 +508,7 @@ public class Sampler {
 
         double angle = robo.getOrientation()/(Math.PI/180);
         angle = getReducedDouble(angle, 8);
+//        System.out.println(angle);
 
         if(angle == 0 && target == 360){
             path.add(new State(
@@ -527,9 +528,13 @@ public class Sampler {
             angle = 360;
         }
 
+//        System.out.println("cur angle: " + angle + " target: " + target);
+
         double maxIncrementAngle = getReducedDouble((minStepSize / (Math.PI * (roboWidth / 2)) * 360) / 2, 8);
         double margin = getReducedDouble(maxIncrementAngle*Math.floor(Math.abs(target - angle)/maxIncrementAngle), 8);
         double offset = getReducedDouble(Math.abs(Math.abs(target - angle) - margin), 8);
+
+//        System.out.println("da: " + maxIncrementAngle + " offset: " + offset);
 
         if(angle < target){
             while(angle < (target - offset)){
@@ -1252,49 +1257,7 @@ public class Sampler {
         return result;
     }
 
-    private void verifyReverseOut(List<State> path, Box og){
-
-        State state = path.get(path.size() - 1);
-        RobotConfig cur = state.getRobo();
-        Point2D rp = cur.getPos();
-
-        Box next;
-
-        if(cur.getOrientation() == Math.PI/2){ //left -> bottom
-            next = new MovingBox(new Point2D.Double(
-                og.getPos().getX(), og.getPos().getY() + og.getWidth()
-            ), og.getWidth());
-
-        }else if(cur.getOrientation() == 3*Math.PI/2){ //right -> top
-            next = new MovingBox(new Point2D.Double(
-                    og.getPos().getX(), og.getPos().getY() - og.getWidth()
-            ), og.getWidth());
-
-        }else if(cur.getOrientation() == Math.PI){ //bottom -> right
-            next = new MovingBox(new Point2D.Double(
-                    og.getPos().getX() - og.getWidth(), og.getPos().getY()
-            ), og.getWidth());
-
-        }else{  //top -> left
-            next = new MovingBox(new Point2D.Double(
-                    og.getPos().getX() + og.getWidth(), og.getPos().getY()
-            ), og.getWidth());
-
-        }
-
-        Rectangle2D proj = new Rectangle2D.Double(
-                rp.getX() - roboWidth/2,
-                rp.getY() - roboWidth/2,
-                roboWidth, roboWidth);
-
-        if(!roboCollision(proj, state)) {
-            path.addAll(refaceRobot(og, next, state));
-        }
-    }
-
     private void reverseOut(List<State> path, Box goal){
-
-        verifyReverseOut(path, goal);
 
         Point2D center = new Point2D.Double(
                 goal.getPos().getX() + goal.getWidth()/2,
@@ -1303,7 +1266,6 @@ public class Sampler {
 
         RobotConfig cur = path.get(path.size() - 1).getRobo();
         State curState = path.get(path.size() - 1);
-
 
         if(cur.getPos().getX() < center.getX()) {    //left
             path.addAll(moveBot(new Point2D.Double(
@@ -1461,18 +1423,22 @@ public class Sampler {
 //            System.out.println(intermediate.getOrientation());
 //            System.out.println(r.getOrientation());
 
-            cc = !(last.getOrientation() < intermediate.getOrientation());
+            cc = (last.getOrientation() < intermediate.getOrientation());
 
             curState =  path.get(path.size() - 1);
             path.addAll(rotateBot(intermediate.getOrientation() * (180/Math.PI), curState, cc));
 
+            System.out.println("pre angle: " + intermediate.getOrientation() * (180/Math.PI));
+
             curState =  path.get(path.size() - 1);
             path.addAll(moveBot(intermediate.getPos(), curState));
 
-            cc = !(last.getOrientation() < intermediate.getOrientation());
+            cc = (last.getOrientation() < intermediate.getOrientation());
 
             curState =  path.get(path.size() - 1);
             path.addAll(rotateBot(Math.abs(intermediate.getOrientation() - Math.PI/2) * (180/Math.PI), curState, cc));
+
+            System.out.println("post angle: " + r.getOrientation() * (180/Math.PI));
 
             curState =  path.get(path.size() - 1);
             path.addAll(moveBot(r.getPos(), curState));
