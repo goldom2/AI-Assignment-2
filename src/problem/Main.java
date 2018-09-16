@@ -8,10 +8,10 @@ public class Main {
 
     public static void main(String[] args) {
         long startTime = System.nanoTime();
-//        if (args.length != 2) {
-//            System.out.println("Usage: java ProgramName inputFileName outputFileName");
-//            System.exit(1);
-//        }
+        if (args.length != 2) {
+            System.out.println("Usage: java ProgramName inputFileName outputFileName");
+            System.exit(1);
+        }
         ProblemSpec ps = new ProblemSpec();
         try {
             ps.loadProblem(args[0]);
