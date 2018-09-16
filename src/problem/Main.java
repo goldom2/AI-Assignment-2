@@ -14,7 +14,7 @@ public class Main {
 //        }
         ProblemSpec ps = new ProblemSpec();
         try {
-            ps.loadProblem("spaces.txt");
+            ps.loadProblem(args[0]);
 //            ps.loadSolution("solution1.txt");
         } catch (IOException e) {
             System.out.println("IO Exception occurred: Could not load + " + args[0]);
@@ -37,7 +37,7 @@ public class Main {
 
         Sampler ss = new Sampler(ps.getInitialRobotConfig(),
                 mb, ps.getStaticObstacles(),mo);
-        ss.stepObjectiveSampling("solution1.txt");
+        ss.stepObjectiveSampling(args[1]);
         long endTime = System.nanoTime();
 
         System.out.println("Time for execution: " + (endTime - startTime)/1000000);
